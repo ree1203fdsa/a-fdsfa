@@ -17,6 +17,31 @@ const DEFAULT: Required<CharacterLook> = {
   skin: '#ffd8b5', shirt: '#1c1c24', pants: '#14141b', shoes: '#0d0d12', hair: '#121218', cape: '#15151d', accent: '#ffc21a',
 }
 
+export interface EquippedLook {
+  slot: string | null
+  effect: Record<string, unknown>
+}
+
+/** Turns equipped cosmetic items into colours for the blocky character. */
+export function lookFromItems(items: EquippedLook[], accent?: string): CharacterLook {
+  const look: CharacterLook = { accent }
+  const col = (e: Record<string, unknown>) => {
+    const c = e.color
+    return typeof c === 'string' ? (c === 'rainbow' ? '#ff5fa2' : c) : undefined
+  }
+  for (const it of items) {
+    switch (it.slot) {
+      case 'color': look.skin = col(it.effect) ?? look.skin; break
+      case 'top': look.shirt = col(it.effect); break
+      case 'bottom': look.pants = col(it.effect); break
+      case 'shoes': look.shoes = col(it.effect); break
+      case 'hair': look.hair = col(it.effect); break
+      case 'back': if (it.effect.shape === 'cape') look.cape = col(it.effect); break
+    }
+  }
+  return look
+}
+
 function crownTexture(color: string) {
   const c = document.createElement('canvas')
   c.width = c.height = 128

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { TutorialModal } from '@/components/Tutorial'
 import { Button, cx, IconButton, Logo, Modal, Progress } from '@/components/ui'
 import { api, errorMessage } from '@/lib/api'
 import { useCountdown } from '@/lib/hooks'
@@ -35,6 +36,16 @@ export default function MainPage() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [howTo, setHowTo] = useState(false)
   const [notice, setNotice] = useState<HomeData['notices'][number] | null>(null)
+  const [params, setParams] = useSearchParams()
+  const [tutorial, setTutorial] = useState(() => params.get('tutorial') === '1' || (!user.tutorialDone && !user.settings.tutorialSlidesSeen))
+  const closeTutorial = () => {
+    setTutorial(false)
+    if (params.has('tutorial')) setParams({}, { replace: true })
+    if (!user.settings.tutorialSlidesSeen) {
+      useAuth.getState().patch({ settings: { ...user.settings, tutorialSlidesSeen: true } })
+      void api.post('/me/tutorial-seen')
+    }
+  }
 
   return (
     <div className="relative h-[100dvh] min-h-[640px] overflow-hidden">
@@ -110,6 +121,7 @@ export default function MainPage() {
 
       <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       <HowToModal open={howTo} onClose={() => setHowTo(false)} />
+      <TutorialModal open={tutorial} onClose={closeTutorial} rewardPending={!user.tutorialDone} />
       <Modal open={notice !== null} onClose={() => setNotice(null)} title={notice?.title}>
         <p className="mb-6 whitespace-pre-wrap text-dim">{notice?.body}</p>
         <Button className="w-full" onClick={() => setNotice(null)}>닫기</Button>

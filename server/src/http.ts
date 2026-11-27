@@ -20,7 +20,8 @@ export function parse<T>(schema: ZodType<T>, data: unknown): T {
   const r = schema.safeParse(data)
   if (!r.success) {
     const first = r.error.issues[0]
-    throw bad(first?.message && !first.message.startsWith('Invalid') ? first.message : '입력값을 다시 확인해 주세요.', 'VALIDATION')
+    // Only our own (Korean) messages are shown to players; zod's English defaults are replaced.
+    throw bad(first?.message && /[가-힣]/.test(first.message) ? first.message : '입력값을 다시 확인해 주세요.', 'VALIDATION')
   }
   return r.data
 }

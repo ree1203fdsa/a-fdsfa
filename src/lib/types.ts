@@ -33,4 +33,5 @@ export interface Settings {
   keys?: Record<string, string>
   showOnline?: boolean
   allowInvites?: 'all' | 'friends' | 'none'
+  tutorialSlidesSeen?: boolean
 }
