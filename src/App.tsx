@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Button, Loading, Toasts } from '@/components/ui'
 import { AppShell } from '@/components/AppShell'
 import { RealtimeBridge } from '@/components/RealtimeBridge'
+import { BattleBridge } from '@/components/BattleBridge'
 import { SettingsApplier } from '@/components/SettingsApplier'
 import { useAuth } from '@/stores/auth'
 import LoginPage from '@/pages/auth/LoginPage'
@@ -54,6 +55,9 @@ const NotificationsPage = lazy(() => import('@/pages/progress/NotificationsPage'
 const MailPage = lazy(() => import('@/pages/progress/MailPage'))
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'))
 const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'))
+const PlayPage = lazy(() => import('@/pages/play/PlayPage'))
+const BattlePage = lazy(() => import('@/pages/battle/BattlePage'))
+const ResultPage = lazy(() => import('@/pages/battle/ResultPage'))
 
 export default function App() {
   const refresh = useAuth((s) => s.refresh)
@@ -90,14 +94,18 @@ export default function App() {
         <Route path="/notifications" element={<RequireAuth><NotificationsPage /></RequireAuth>} />
         <Route path="/mail" element={<RequireAuth><MailPage /></RequireAuth>} />
         <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+        <Route path="/play" element={<RequireAuth><PlayPage /></RequireAuth>} />
+        <Route path="/battle" element={<RequireAuth><BattlePage /></RequireAuth>} />
+        <Route path="/battle/result" element={<RequireAuth><ResultPage /></RequireAuth>} />
         {([
-          ['/play', '플레이', '⚔️'], ['/codex', '무기 도감', '📖'], ['/contest', '무기 대회', '🎖️'], ['/customize', '캐릭터 꾸미기', '👕'],
+          ['/play/friends', '친구와 플레이', '👫'], ['/codex', '무기 도감', '📖'], ['/contest', '무기 대회', '🎖️'], ['/customize', '캐릭터 꾸미기', '👕'],
         ] as const).map(([path, title, icon]) => (
           <Route key={path} path={path} element={<RequireAuth>{soon(title, icon)}</RequireAuth>} />
         ))}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <RealtimeBridge />
+      <BattleBridge />
       <SettingsApplier />
       <Toasts />
     </>
