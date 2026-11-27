@@ -65,6 +65,19 @@ const CodexPage = lazy(() => import('@/pages/content/CodexPage'))
 const ContestPage = lazy(() => import('@/pages/content/ContestPage'))
 const CustomizePage = lazy(() => import('@/pages/content/CustomizePage'))
 const SupportPage = lazy(() => import('@/pages/content/SupportPage'))
+const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })))
+const AdminLogin = lazy(() => import('@/pages/admin/AdminLayout').then((m) => ({ default: m.AdminLogin })))
+const adminPage = <K extends 'AdminDashboard' | 'AdminUsers' | 'AdminWeapons' | 'AdminShop' | 'AdminCrud' | 'AdminGame' | 'AdminReports' | 'AdminMail' | 'AdminServer'>(k: K) =>
+  lazy(() => import('@/pages/admin/AdminPages').then((m) => ({ default: m[k] as unknown as React.ComponentType<object> })))
+const AdminDashboard = adminPage('AdminDashboard')
+const AdminUsers = adminPage('AdminUsers')
+const AdminWeapons = adminPage('AdminWeapons')
+const AdminShop = adminPage('AdminShop')
+const AdminCrud = lazy(() => import('@/pages/admin/AdminPages').then((m) => ({ default: m.AdminCrud })))
+const AdminGame = adminPage('AdminGame')
+const AdminReports = adminPage('AdminReports')
+const AdminMail = adminPage('AdminMail')
+const AdminServer = adminPage('AdminServer')
 
 export default function App() {
   const refresh = useAuth((s) => s.refresh)
@@ -109,6 +122,21 @@ export default function App() {
         <Route path="/codex" element={<RequireAuth><CodexPage /></RequireAuth>} />
         <Route path="/contest" element={<RequireAuth><ContestPage /></RequireAuth>} />
         <Route path="/customize" element={<RequireAuth><CustomizePage /></RequireAuth>} />
+        <Route path="/admin/login" element={<Suspense fallback={<FullLoading />}><AdminLogin /></Suspense>} />
+        <Route path="/admin" element={<Suspense fallback={<FullLoading />}><AdminLayout /></Suspense>}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="weapons" element={<AdminWeapons />} />
+          <Route path="shop" element={<AdminShop />} />
+          <Route path="missions" element={<AdminCrud kind="missions" />} />
+          <Route path="events" element={<AdminCrud kind="events" />} />
+          <Route path="notices" element={<AdminCrud kind="notices" />} />
+          <Route path="contests" element={<AdminCrud kind="contests" />} />
+          <Route path="game" element={<AdminGame />} />
+          <Route path="reports" element={<AdminReports />} />
+          <Route path="mail" element={<AdminMail />} />
+          <Route path="server" element={<AdminServer />} />
+        </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <RealtimeBridge />
