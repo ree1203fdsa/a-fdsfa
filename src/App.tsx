@@ -11,7 +11,6 @@ import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
 import ForgotPage from '@/pages/auth/ForgotPage'
 import MainPage from '@/pages/MainPage'
-import ComingSoon from '@/pages/ComingSoon'
 
 function Offline() {
   const refresh = useAuth((s) => s.refresh)
@@ -43,7 +42,6 @@ function GuestOnly({ children }: { children: ReactNode }) {
 }
 
 const FullLoading = ({ text = '불러오는 중...' }: { text?: string }) => <div className="bg-arena min-h-full"><Loading text={text} /></div>
-const soon = (title: string, icon: string) => <ComingSoon title={title} icon={icon} />
 
 const WorkshopPage = lazy(() => import('@/pages/workshop/WorkshopPage'))
 const GlbViewer = lazy(() => import('@/pages/GlbViewer'))
@@ -62,6 +60,11 @@ const ResultPage = lazy(() => import('@/pages/battle/ResultPage'))
 const FriendsPage = lazy(() => import('@/pages/friends/FriendsPage'))
 const FriendsPlayPage = lazy(() => import('@/pages/room/FriendsPlayPage'))
 const RoomPage = lazy(() => import('@/pages/room/RoomPage'))
+const RankingPage = lazy(() => import('@/pages/content/RankingPage'))
+const CodexPage = lazy(() => import('@/pages/content/CodexPage'))
+const ContestPage = lazy(() => import('@/pages/content/ContestPage'))
+const CustomizePage = lazy(() => import('@/pages/content/CustomizePage'))
+const SupportPage = lazy(() => import('@/pages/content/SupportPage'))
 
 export default function App() {
   const refresh = useAuth((s) => s.refresh)
@@ -80,7 +83,7 @@ export default function App() {
         <Route path="/login" element={<GuestOnly><LoginPage /></GuestOnly>} />
         <Route path="/register" element={<GuestOnly><RegisterPage /></GuestOnly>} />
         <Route path="/forgot" element={<GuestOnly><ForgotPage /></GuestOnly>} />
-        <Route path="/support" element={soon('고객지원', '💌')} />
+        <Route path="/support" element={<Suspense fallback={<FullLoading />}><SupportPage /></Suspense>} />
         <Route path="/viewer" element={<Suspense fallback={<FullLoading />}><GlbViewer /></Suspense>} />
         <Route path="/" element={<RequireAuth><MainPage /></RequireAuth>} />
         <Route element={<RequireAuth><AppShell /></RequireAuth>}>
@@ -89,7 +92,7 @@ export default function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/players/:id" element={<ProfilePage />} />
           <Route path="/friends" element={<FriendsPage />} />
-          <Route path="/ranking" element={soon('랭킹', '🏆')} />
+          <Route path="/ranking" element={<RankingPage />} />
         </Route>
         <Route path="/workshop" element={<RequireAuth><WorkshopPage /></RequireAuth>} />
         <Route path="/weapons/:id" element={<RequireAuth><WeaponDetailPage /></RequireAuth>} />
@@ -103,11 +106,9 @@ export default function App() {
         <Route path="/room" element={<RequireAuth><RoomPage /></RequireAuth>} />
         <Route path="/battle" element={<RequireAuth><BattlePage /></RequireAuth>} />
         <Route path="/battle/result" element={<RequireAuth><ResultPage /></RequireAuth>} />
-        {([
-          ['/codex', '무기 도감', '📖'], ['/contest', '무기 대회', '🎖️'], ['/customize', '캐릭터 꾸미기', '👕'],
-        ] as const).map(([path, title, icon]) => (
-          <Route key={path} path={path} element={<RequireAuth>{soon(title, icon)}</RequireAuth>} />
-        ))}
+        <Route path="/codex" element={<RequireAuth><CodexPage /></RequireAuth>} />
+        <Route path="/contest" element={<RequireAuth><ContestPage /></RequireAuth>} />
+        <Route path="/customize" element={<RequireAuth><CustomizePage /></RequireAuth>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <RealtimeBridge />

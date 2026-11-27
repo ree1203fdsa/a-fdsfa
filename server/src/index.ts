@@ -14,6 +14,7 @@ import { adminRouter } from './routes/admin.ts'
 import { setupRealtime } from './realtime/index.ts'
 import { startJobs } from './services/jobs.ts'
 import { startPhoneSync } from './routes/phone.ts'
+import { supportRouter } from './routes/content.ts'
 
 const PORT = Number(process.env.PORT ?? 3001)
 export const startedAt = new Date()
@@ -49,6 +50,7 @@ app.get('/api/lan', (_req, res) => {
     .map((n) => n!.address)
   res.json({ ips, port: 5180 })
 })
+app.use('/api/support', supportRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/admin-auth', adminAuthRouter)
 app.use('/api/admin', loadAdmin, adminRouter)

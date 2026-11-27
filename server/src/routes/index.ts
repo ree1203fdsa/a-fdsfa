@@ -7,6 +7,7 @@ import { draftsRouter, weaponsRouter } from './weapons.ts'
 import { phoneRouter } from './phone.ts'
 import { itemsRouter, shopRouter } from './shop.ts'
 import { blocksRouter, friendsRouter } from './friends.ts'
+import { codexRouter, contestRouter, rankingRouter, reportsRouter } from './content.ts'
 import { attendanceRouter, mailRouter, meRouter, notificationsRouter, profileRouter } from './account.ts'
 
 export const apiRouter = Router()
@@ -25,6 +26,10 @@ apiRouter.use('/me', meRouter)
 apiRouter.use('/profile', profileRouter)
 apiRouter.use('/friends', friendsRouter)
 apiRouter.use('/blocks', blocksRouter)
+apiRouter.use('/ranking', rankingRouter)
+apiRouter.use('/codex', codexRouter)
+apiRouter.use('/contests', contestRouter)
+apiRouter.use('/reports', reportsRouter)
 
 /** Current season = current calendar month (KST); score = sum of match scores this month. */
 async function seasonTop(userId: number) {
