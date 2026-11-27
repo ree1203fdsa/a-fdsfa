@@ -4,6 +4,7 @@ import { Button, Loading, Toasts } from '@/components/ui'
 import { AppShell } from '@/components/AppShell'
 import { RealtimeBridge } from '@/components/RealtimeBridge'
 import { BattleBridge } from '@/components/BattleBridge'
+import { RoomBridge } from '@/components/RoomBridge'
 import { SettingsApplier } from '@/components/SettingsApplier'
 import { useAuth } from '@/stores/auth'
 import LoginPage from '@/pages/auth/LoginPage'
@@ -58,6 +59,9 @@ const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'))
 const PlayPage = lazy(() => import('@/pages/play/PlayPage'))
 const BattlePage = lazy(() => import('@/pages/battle/BattlePage'))
 const ResultPage = lazy(() => import('@/pages/battle/ResultPage'))
+const FriendsPage = lazy(() => import('@/pages/friends/FriendsPage'))
+const FriendsPlayPage = lazy(() => import('@/pages/room/FriendsPlayPage'))
+const RoomPage = lazy(() => import('@/pages/room/RoomPage'))
 
 export default function App() {
   const refresh = useAuth((s) => s.refresh)
@@ -84,7 +88,7 @@ export default function App() {
           <Route path="/missions" element={<MissionsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/players/:id" element={<ProfilePage />} />
-          <Route path="/friends" element={soon('친구', '👫')} />
+          <Route path="/friends" element={<FriendsPage />} />
           <Route path="/ranking" element={soon('랭킹', '🏆')} />
         </Route>
         <Route path="/workshop" element={<RequireAuth><WorkshopPage /></RequireAuth>} />
@@ -95,10 +99,12 @@ export default function App() {
         <Route path="/mail" element={<RequireAuth><MailPage /></RequireAuth>} />
         <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
         <Route path="/play" element={<RequireAuth><PlayPage /></RequireAuth>} />
+        <Route path="/play/friends" element={<RequireAuth><FriendsPlayPage /></RequireAuth>} />
+        <Route path="/room" element={<RequireAuth><RoomPage /></RequireAuth>} />
         <Route path="/battle" element={<RequireAuth><BattlePage /></RequireAuth>} />
         <Route path="/battle/result" element={<RequireAuth><ResultPage /></RequireAuth>} />
         {([
-          ['/play/friends', '친구와 플레이', '👫'], ['/codex', '무기 도감', '📖'], ['/contest', '무기 대회', '🎖️'], ['/customize', '캐릭터 꾸미기', '👕'],
+          ['/codex', '무기 도감', '📖'], ['/contest', '무기 대회', '🎖️'], ['/customize', '캐릭터 꾸미기', '👕'],
         ] as const).map(([path, title, icon]) => (
           <Route key={path} path={path} element={<RequireAuth>{soon(title, icon)}</RequireAuth>} />
         ))}
@@ -106,6 +112,7 @@ export default function App() {
       </Routes>
       <RealtimeBridge />
       <BattleBridge />
+      <RoomBridge />
       <SettingsApplier />
       <Toasts />
     </>

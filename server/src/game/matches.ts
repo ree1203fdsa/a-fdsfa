@@ -9,6 +9,7 @@ import { grant, notify } from '../services/economy.ts'
 import { progress } from '../services/missions.ts'
 import { Battle } from './engine.ts'
 import { think } from './ai.ts'
+import { setStatus } from '../realtime/presence.ts'
 
 const battles = new Map<number, Battle>()
 const userBattle = new Map<number, { matchId: number; fighterId: string }>()
@@ -51,7 +52,7 @@ export function inBattle(userId: number) {
 
 /** Builds a battle, wires it to sockets, and starts it once every human is ready (or after 8s). */
 export async function launchBattle(io: Server, opts: {
-  mode: 'AI' | 'FRIEND'; mapId: string; difficulty: AiDifficulty | null; roomId?: number; players: BattlePlayerInfo[]
+  mode: 'AI' | 'FRIEND'; mapId: string; difficulty: AiDifficulty | null; roomId?: number; players: BattlePlayerInfo[]; onDone?: () => void
 }) {
   const cfg = await getBattle()
   const match = await prisma.match.create({ data: { mode: opts.mode, mapId: opts.mapId, aiDifficulty: opts.difficulty, roomId: opts.roomId } })
@@ -61,11 +62,15 @@ export async function launchBattle(io: Server, opts: {
     hooks: {
       think,
       emit: (event, data) => io.to(room).emit(event, data),
-      onEnd: (result) => void finishMatch(io, battle, result),
+      onEnd: (result) => void finishMatch(io, battle, result).catch((e) => console.error('[finishMatch]', e)).finally(() => opts.onDone?.()),
     },
   })
   battles.set(match.id, battle)
-  for (const p of opts.players) if (p.userId) userBattle.set(p.userId, { matchId: match.id, fighterId: p.id })
+  for (const p of opts.players) {
+    if (!p.userId) continue
+    userBattle.set(p.userId, { matchId: match.id, fighterId: p.id })
+    setStatus(p.userId, 'playing')
+  }
   const sockets = await io.fetchSockets()
   for (const s of sockets) if (opts.players.some((p) => p.userId === s.data.userId)) s.join(room)
   for (const p of opts.players) {
@@ -147,6 +152,7 @@ async function finishMatch(io: Server, battle: Battle, result: BattleResult) {
       })
       levelUps = r.levelUps
       userBattle.delete(p.userId)
+      if (battle.mode === 'AI') setStatus(p.userId, 'online')
       io.to('user:' + p.userId).emit('battle:end', { ...result, reward: { coins, xp, levelUps, valid, result: outcome } } satisfies BattleResult)
       if (!valid && result.reason !== 'abandon') {
         await notify(prisma, p.userId, 'REWARD', '전투 보상을 받지 못했어요', '전투에 거의 참여하지 않았거나 연결이 끊겨서 보상이 지급되지 않았어요.')
