@@ -28,6 +28,9 @@ function GuestOnly({ children }: { children: ReactNode }) {
 const soon = (title: string, icon: string) => <ComingSoon title={title} icon={icon} />
 const WorkshopPage = lazy(() => import('@/pages/workshop/WorkshopPage'))
 const GlbViewer = lazy(() => import('@/pages/GlbViewer'))
+const InventoryPage = lazy(() => import('@/pages/inventory/InventoryPage'))
+const WeaponDetailPage = lazy(() => import('@/pages/inventory/WeaponDetailPage'))
+const ShopPage = lazy(() => import('@/pages/shop/ShopPage'))
 const FullLoading = () => <div className="bg-arena min-h-full"><Loading text="불러오는 중..." /></div>
 
 export default function App() {
@@ -51,15 +54,17 @@ export default function App() {
         <Route path="/viewer" element={<Suspense fallback={<FullLoading />}><GlbViewer /></Suspense>} />
         <Route path="/" element={<RequireAuth><MainPage /></RequireAuth>} />
         <Route element={<RequireAuth><AppShell /></RequireAuth>}>
-          <Route path="/inventory" element={soon('무기 보관함', '🎒')} />
+          <Route path="/inventory" element={<Suspense fallback={<FullLoading />}><InventoryPage /></Suspense>} />
           <Route path="/friends" element={soon('친구', '👫')} />
           <Route path="/missions" element={soon('미션', '🎯')} />
           <Route path="/ranking" element={soon('랭킹', '🏆')} />
           <Route path="/profile" element={soon('프로필', '😊')} />
         </Route>
         <Route path="/workshop" element={<RequireAuth><Suspense fallback={<FullLoading />}><WorkshopPage /></Suspense></RequireAuth>} />
+        <Route path="/weapons/:id" element={<RequireAuth><Suspense fallback={<FullLoading />}><WeaponDetailPage /></Suspense></RequireAuth>} />
+        <Route path="/shop" element={<RequireAuth><Suspense fallback={<FullLoading />}><ShopPage /></Suspense></RequireAuth>} />
         {([
-          ['/shop', '상점', '🛒'], ['/play', '플레이', '⚔️'], ['/settings', '설정', '⚙️'],
+          ['/play', '플레이', '⚔️'], ['/settings', '설정', '⚙️'],
           ['/notifications', '알림', '🔔'], ['/attendance', '출석 체크', '📅'], ['/codex', '무기 도감', '📖'], ['/contest', '무기 대회', '🎖️'],
           ['/customize', '캐릭터 꾸미기', '👕'], ['/mail', '우편함', '📮'],
         ] as const).map(([path, title, icon]) => (

@@ -5,6 +5,7 @@ import { prisma } from '../db.ts'
 import { missionList, missionsRouter } from './missions.ts'
 import { draftsRouter, weaponsRouter } from './weapons.ts'
 import { phoneRouter } from './phone.ts'
+import { itemsRouter, shopRouter } from './shop.ts'
 
 export const apiRouter = Router()
 
@@ -13,6 +14,8 @@ apiRouter.use('/missions', missionsRouter)
 apiRouter.use('/weapons', weaponsRouter)
 apiRouter.use('/drafts', draftsRouter)
 apiRouter.use('/phone', phoneRouter)
+apiRouter.use('/shop', shopRouter)
+apiRouter.use('/items', itemsRouter)
 
 /** Current season = current calendar month (KST); score = sum of match scores this month. */
 async function seasonTop(userId: number) {

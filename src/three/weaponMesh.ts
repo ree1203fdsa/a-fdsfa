@@ -188,7 +188,9 @@ export function buildWeapon(strokes: Stroke[], paperId: string, type: WeaponType
   group.add(mesh)
   if (type === 'twinblades') {
     const twin = mesh.clone()
-    twin.position.x = 0.35
+    geo.computeBoundingBox()
+    const bb = geo.boundingBox!
+    twin.position.x = bb.max.x - bb.min.x + 0.12
     twin.scale.x = params.flip ? 1 : -1
     group.add(twin)
   }
