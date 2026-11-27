@@ -19,7 +19,9 @@ const PORT = Number(process.env.PORT ?? 3001)
 export const startedAt = new Date()
 
 const app = express()
-app.set('trust proxy', 'loopback')
+// Requests come through up to two proxies (Vercel rewrite → Tailscale Funnel); trust both so
+// rate limits key on the real player address instead of Vercel's.
+app.set('trust proxy', 2)
 app.disable('x-powered-by')
 const jsonSmall = express.json({ limit: '1.5mb' })
 const jsonLarge = express.json({ limit: '9mb' })
@@ -58,13 +60,22 @@ if (process.env.NODE_ENV === 'production' && existsSync(dist)) {
   app.use(express.static(dist))
   app.get(/^\/(?!api|socket\.io).*/, (_req, res) => res.sendFile(path.join(dist, 'index.html')))
 } else {
-  // In development the screens are served by Vite; send visitors there instead of a bare 404.
-  app.get('/', (req, res) => res.redirect(`http://${req.hostname}:5180/`))
+  // Screens are served by Vite locally or by Vercel publicly; this server only answers /api and sockets.
+  app.get('/', (req, res) => {
+    if (req.hostname.endsWith('.ts.net')) return void res.type('text/plain; charset=utf-8').send('컬러워즈 게임 서버가 실행 중이에요.')
+    res.redirect(`http://${req.hostname}:5180/`)
+  })
 }
 app.use(errorHandler)
 
 const server = createServer(app)
-const io = new Server(server, { path: '/socket.io', maxHttpBufferSize: 64_000, cors: { origin: false } })
+// Browsers may open the socket from the Vercel site; identity comes from a signed ticket, not cookies.
+const SOCKET_ORIGINS = [/^https:\/\/[a-z0-9-]+\.vercel\.app$/, /^http:\/\/localhost:\d+$/, /^http:\/\/(\d+\.){3}\d+:5180$/]
+const io = new Server(server, {
+  path: '/socket.io',
+  maxHttpBufferSize: 64_000,
+  cors: { origin: (origin, cb) => cb(null, !origin || SOCKET_ORIGINS.some((r) => r.test(origin))), credentials: false },
+})
 setIo(io)
 setupRealtime(io)
 startJobs()

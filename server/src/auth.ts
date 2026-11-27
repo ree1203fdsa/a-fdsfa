@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs'
 import crypto from 'node:crypto'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import path from 'node:path'
 import type { NextFunction, Request, Response } from 'express'
 import { Router } from 'express'
 import { z } from 'zod'
@@ -30,6 +32,33 @@ declare global {
 
 export const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex')
 
+// Signing key for socket tickets; generated once and kept out of git (server/data is ignored).
+const SECRET_FILE = path.resolve(import.meta.dirname, '../data/secret.key')
+const SECRET = (() => {
+  if (existsSync(SECRET_FILE)) return readFileSync(SECRET_FILE, 'utf8').trim()
+  const s = crypto.randomBytes(32).toString('hex')
+  mkdirSync(path.dirname(SECRET_FILE), { recursive: true })
+  writeFileSync(SECRET_FILE, s)
+  return s
+})()
+
+/** Short-lived ticket so a socket on another origin (Vercel → this PC) can prove who the player is. */
+export function socketToken(userId: number) {
+  const exp = Date.now() + 120_000
+  const body = `${userId}.${exp}`
+  return `${body}.${crypto.createHmac('sha256', SECRET).update(body).digest('base64url')}`
+}
+
+export function verifySocketToken(token: unknown): number | null {
+  if (typeof token !== 'string') return null
+  const [uid, exp, sig] = token.split('.')
+  if (!uid || !exp || !sig) return null
+  const expected = crypto.createHmac('sha256', SECRET).update(`${uid}.${exp}`).digest('base64url')
+  if (sig.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null
+  if (Number(exp) < Date.now()) return null
+  return Number(uid)
+}
+
 export function recoveryCode() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   const part = () => Array.from({ length: 4 }, () => alphabet[crypto.randomInt(alphabet.length)]).join('')
@@ -55,7 +84,7 @@ async function createSession(req: Request, res: Response, userId: number, kind: 
     },
   })
   res.cookie(kind === 'ADMIN' ? ADMIN_COOKIE : GAME_COOKIE, token, {
-    httpOnly: true, sameSite: 'lax', secure: SECURE, path: '/',
+    httpOnly: true, sameSite: 'lax', secure: SECURE || req.secure, path: '/',
     maxAge: remember || kind === 'ADMIN' ? ttl : undefined,
   })
 }
@@ -255,6 +284,12 @@ authRouter.get('/me', async (req, res) => {
     return void res.json({ user: null, blocked })
   }
   res.json({ user: meView(u) })
+})
+
+authRouter.post('/socket-token', async (req, res) => {
+  const u = await userFromToken(req.cookies?.[GAME_COOKIE], 'GAME')
+  if (!u || accountBlockReason(u)) throw new HttpError(401, '로그인이 필요해요.', 'UNAUTHORIZED')
+  res.json({ token: socketToken(u.id) })
 })
 
 authRouter.post('/password', requireUser, async (req, res) => {
