@@ -2,6 +2,7 @@ import type { Server } from 'socket.io'
 import { accountBlockReason, GAME_COOKIE, parseCookies, userFromToken, verifySocketToken } from '../auth.ts'
 import { prisma } from '../db.ts'
 import { setupLobby } from './lobby.ts'
+import { setupBattleSockets } from '../game/matches.ts'
 
 export function setupRealtime(io: Server) {
   io.use(async (socket, next) => {
@@ -20,5 +21,6 @@ export function setupRealtime(io: Server) {
   io.on('connection', (socket) => {
     socket.join('user:' + socket.data.userId)
     setupLobby(io, socket)
+    setupBattleSockets(io, socket)
   })
 }

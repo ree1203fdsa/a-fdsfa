@@ -60,35 +60,86 @@ function crownTexture(color: string) {
 /**
  * Blocky hero. Faces +Z. `rightHand` children sit in the right fist, +Y along the held item.
  */
+/** Live animation input for battle characters, read every frame (no React re-renders). */
+export interface Pose {
+  act: string
+  at: number
+  speed: number
+  ranged: boolean
+}
+
 export function Character({
-  look, rightHand, idle = true, ...props
-}: { look?: CharacterLook; rightHand?: ReactNode; idle?: boolean } & ThreeElements['group']) {
+  look, rightHand, idle = true, poseRef, ...props
+}: { look?: CharacterLook; rightHand?: ReactNode; idle?: boolean; poseRef?: { current: Pose } } & ThreeElements['group']) {
   const c = { ...DEFAULT, ...look }
+  const root = useRef<Group>(null)
   const body = useRef<Group>(null)
   const head = useRef<Group>(null)
   const armR = useRef<Group>(null)
   const armL = useRef<Group>(null)
+  const legL = useRef<Group>(null)
+  const legR = useRef<Group>(null)
   const cape = useRef<Group>(null)
   const emblem = useMemo(() => crownTexture('#e8e8f0'), [])
 
   useFrame(({ clock }) => {
-    if (!idle) return
     const t = clock.elapsedTime
-    if (body.current) body.current.position.y = Math.sin(t * 1.8) * 0.015
-    if (head.current) head.current.rotation.y = Math.sin(t * 0.45) * 0.15
-    if (armL.current) armL.current.rotation.x = Math.sin(t * 1.8) * 0.04
-    if (armR.current) armR.current.rotation.x = -0.55 + Math.sin(t * 1.8 + 0.6) * 0.04
-    if (cape.current) cape.current.rotation.x = 0.12 + Math.sin(t * 2.2) * 0.04
+    const pose = poseRef?.current
+    if (!pose) {
+      if (!idle) return
+      if (body.current) body.current.position.y = Math.sin(t * 1.8) * 0.015
+      if (head.current) head.current.rotation.y = Math.sin(t * 0.45) * 0.15
+      if (armL.current) armL.current.rotation.x = Math.sin(t * 1.8) * 0.04
+      if (armR.current) armR.current.rotation.x = -0.55 + Math.sin(t * 1.8 + 0.6) * 0.04
+      if (cape.current) cape.current.rotation.x = 0.12 + Math.sin(t * 2.2) * 0.04
+      return
+    }
+    // Battle animation driven by the server's action state.
+    const moving = Math.min(1, pose.speed / 4)
+    const stride = Math.sin(t * (pose.act === 'run' ? 14 : 10)) * 0.7 * moving
+    if (legL.current) legL.current.rotation.x = stride
+    if (legR.current) legR.current.rotation.x = -stride
+    if (armL.current) armL.current.rotation.x = -stride * 0.6
+    if (cape.current) cape.current.rotation.x = 0.12 + moving * 0.5 + Math.sin(t * 6) * 0.05
+    let arm = pose.ranged ? -1.4 : -0.55 + stride * 0.3
+    let armZ = 0
+    const a = pose.at
+    if (pose.act === 'attack' || pose.act === 'strong') {
+      const dur = pose.act === 'strong' ? 0.4 : 0.28
+      const k = Math.min(1, a / dur)
+      arm = pose.ranged ? -1.4 - Math.sin(k * Math.PI) * 0.25 : -2.8 + k * 3.3
+      armZ = pose.ranged ? 0 : Math.sin(k * Math.PI) * -0.6
+    } else if (pose.act === 'special') {
+      const k = Math.min(1, a / 0.5)
+      arm = -3 + k * 3.2
+      armZ = -0.8 * Math.sin(k * Math.PI)
+    } else if (pose.act === 'block') {
+      arm = pose.ranged ? -1.5 : -1.3
+      armZ = pose.ranged ? 0 : 0.5
+    }
+    if (armR.current) {
+      armR.current.rotation.x += (arm - armR.current.rotation.x) * 0.45
+      armR.current.rotation.z = armZ
+    }
+    if (root.current) {
+      const dead = pose.act === 'dead'
+      const spin = pose.act === 'special' && !pose.ranged ? Math.min(1, a / 0.5) * Math.PI * 2 : 0
+      root.current.rotation.x += ((dead ? -Math.PI / 2 : pose.act === 'dodge' ? -0.5 : 0) - root.current.rotation.x) * 0.25
+      root.current.rotation.y = spin
+      root.current.position.y = dead ? 0.25 : 0
+    }
+    if (body.current) body.current.position.y = pose.act === 'stun' ? Math.sin(t * 20) * 0.03 : 0
   })
 
   const mat = (color: string, rough = 0.7) => <meshStandardMaterial color={color} roughness={rough} />
 
   return (
     <group {...props}>
+     <group ref={root}>
       {[-0.17, 0.17].map((x) => (
-        <group key={x} position={[x, 0, 0]}>
-          <RoundedBox args={[0.3, 0.72, 0.32]} radius={0.04} position={[0, 0.48, 0]} castShadow>{mat(c.pants)}</RoundedBox>
-          <RoundedBox args={[0.32, 0.14, 0.38]} radius={0.04} position={[0, 0.07, 0.03]} castShadow>{mat(c.shoes, 0.5)}</RoundedBox>
+        <group key={x} ref={x < 0 ? legL : legR} position={[x, 0.84, 0]}>
+          <RoundedBox args={[0.3, 0.72, 0.32]} radius={0.04} position={[0, -0.36, 0]} castShadow>{mat(c.pants)}</RoundedBox>
+          <RoundedBox args={[0.32, 0.14, 0.38]} radius={0.04} position={[0, -0.77, 0.03]} castShadow>{mat(c.shoes, 0.5)}</RoundedBox>
         </group>
       ))}
 
@@ -149,6 +200,7 @@ export function Character({
           ))}
         </group>
       </group>
+     </group>
     </group>
   )
 }

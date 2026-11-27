@@ -502,7 +502,8 @@ export function combatProfile(type: WeaponType, st: Omit<WeaponStats, 'special'>
   const ranged = info.style !== 'melee'
   return {
     style: info.style,
-    damage: 7 + st.attack * 0.2,
+    // Tuned so a 2v2 lasts roughly 30–90s with HP 100 (bot simulations ended in ~10s at 7 + 0.2×attack).
+    damage: 2.5 + st.attack * 0.075,
     cooldown: Math.max(0.35, 1.15 - st.speed * 0.0075),
     reach: info.reach * (0.85 + st.range * 0.004),
     arc: ((55 + st.area * 1.1) * Math.PI) / 180,
