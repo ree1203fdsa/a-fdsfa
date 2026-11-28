@@ -1,3 +1,4 @@
+import type { Avatar } from './avatar.ts'
 import type { AiDifficulty, Team, WeaponType } from './constants.ts'
 import type { ModelParams, Stroke } from './weapon.ts'
 
@@ -50,6 +51,8 @@ export interface BattlePlayerInfo {
   /** Staff playing in admin mode: shown with a badge, invincible, special always ready, no rewards. */
   staff?: boolean
   look: { slot: string | null; effect: Record<string, unknown> }[]
+  /** Base look from 캐릭터 만들기 (cosmetics in `look` are drawn on top). */
+  avatar?: Avatar
   weapon: BattleWeaponInfo
 }
 

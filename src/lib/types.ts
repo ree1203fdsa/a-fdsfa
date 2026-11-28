@@ -1,3 +1,4 @@
+import type { Avatar } from '@shared/avatar'
 export interface Me {
   id: number
   username: string
@@ -7,7 +8,7 @@ export interface Me {
   xpInto: number
   xpNeed: number
   coins: number
-  avatar: Record<string, string>
+  avatar: Avatar
   profile: Record<string, string>
   repWeaponId: number | null
   equippedWeaponId: number | null

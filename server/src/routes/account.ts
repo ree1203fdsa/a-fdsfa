@@ -5,6 +5,7 @@ import { kstDateKey, previousKstDateKey, levelFromXp } from '../../../shared/pro
 import { prisma, parseJson } from '../db.ts'
 import { bad, forbidden, idParam, notFound, parse } from '../http.ts'
 import { isStaff, meView } from '../auth.ts'
+import { sanitizeAvatar } from '../../../shared/avatar.ts'
 import { grant, notify } from '../services/economy.ts'
 import { progress } from '../services/missions.ts'
 import { weaponView } from './weapons.ts'
@@ -173,6 +174,14 @@ meRouter.put('/play-mode', async (req, res) => {
   res.json({ user: meView(fresh) })
 })
 
+// 캐릭터 만들기: free base look. Unknown values are replaced with defaults by sanitizeAvatar.
+meRouter.put('/avatar', async (req, res) => {
+  const body = parse(z.object({ avatar: z.record(z.string(), z.unknown()) }), req.body)
+  const avatar = { ...sanitizeAvatar(body.avatar), created: true }
+  const u = await prisma.user.update({ where: { id: req.user!.id }, data: { avatar: JSON.stringify(avatar) } })
+  res.json({ user: meView(u) })
+})
+
 meRouter.post('/tutorial-seen', async (req, res) => {
   // Marks the intro slides as seen; the coin reward is still tied to finishing the first weapon.
   const s = parseJson<Record<string, unknown>>(req.user!.settings, {})
@@ -201,6 +210,7 @@ profileRouter.get('/:id', async (req, res) => {
     id: u.id, nickname: u.nickname, level: u.level, xpInto: lv.into, xpNeed: lv.need, createdAt: u.createdAt, isMe: id === req.user!.id,
     stats: { totalGames: u.totalGames, wins: u.wins, losses: u.losses, draws: u.draws, battleScore: u.battleScore, weaponsCreated: u.weaponsCreated, friends },
     coins: id === req.user!.id ? u.coins : undefined,
+    avatar: sanitizeAvatar(parseJson(u.avatar, {})),
     look: equipped.filter((e) => e.item.slot).map((e) => ({ category: e.item.category, slot: e.item.slot, itemId: e.itemId, name: e.item.name, effect: parseJson(e.item.effect, {}) })),
     repWeapon: rep ? weaponView(rep) : null,
   })

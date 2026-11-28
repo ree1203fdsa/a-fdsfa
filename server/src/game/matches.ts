@@ -2,6 +2,7 @@ import type { Server, Socket } from 'socket.io'
 import { sanitizeInput, type BattleInit, type BattlePlayerInfo, type BattleResult, type BattleWeaponInfo } from '../../../shared/battle.ts'
 import { AI_DIFFICULTIES, PALETTE, WEAPON_INFO, WEAPON_TYPES, type AiDifficulty, type Team, type WeaponType } from '../../../shared/constants.ts'
 import { MAPS } from '../../../shared/maps.ts'
+import { randomAvatar, sanitizeAvatar } from '../../../shared/avatar.ts'
 import { analyzeStrokes, autoModelParams, computeStats, presetStrokes, type ModelParams, type Stroke } from '../../../shared/weapon.ts'
 import { prisma, parseJson } from '../db.ts'
 import { getBattle, getRewards } from '../services/config.ts'
@@ -45,6 +46,17 @@ export async function playerWeapon(userId: number): Promise<BattleWeaponInfo> {
 export async function playerLook(userId: number) {
   const items = await prisma.userItem.findMany({ where: { userId, equipped: true, item: { category: 'COSMETIC' } }, include: { item: true } })
   return items.map((i) => ({ slot: i.item.slot, effect: parseJson<Record<string, unknown>>(i.item.effect, {}) }))
+}
+
+export async function playerAvatar(userId: number) {
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { avatar: true } })
+  return sanitizeAvatar(parseJson(u?.avatar ?? '{}', {}))
+}
+
+/** Deterministic random look for an AI bot. */
+export function botAvatar(seed: number) {
+  let x = seed * 9301 + 49297
+  return randomAvatar(() => ((x = (x * 9301 + 49297) % 233280) / 233280))
 }
 
 export function inBattle(userId: number) {
@@ -193,13 +205,13 @@ export function setupBattleSockets(io: Server, socket: Socket) {
       const teamSize = o.teamSize === 1 ? 1 : 2
       const u = await prisma.user.findUniqueOrThrow({ where: { id: userId } })
       const players: BattlePlayerInfo[] = [
-        { id: 'p' + userId, userId, name: u.nickname, level: u.level, team: 'RED', bot: false, staff: adminPlay(u), look: await playerLook(userId), weapon: await playerWeapon(userId) },
+        { id: 'p' + userId, userId, name: u.nickname, level: u.level, team: 'RED', bot: false, staff: adminPlay(u), look: await playerLook(userId), avatar: await playerAvatar(userId), weapon: await playerWeapon(userId) },
       ]
       const pool = [...WEAPON_TYPES].sort(() => Math.random() - 0.5)
       const names = [...BOT_NAMES].sort(() => Math.random() - 0.5)
       const addBot = (team: Team, i: number) => {
         const seed = Math.floor(Math.random() * 1000)
-        players.push({ id: `b${i}`, userId: null, name: names[i], level: 1 + AI_DIFFICULTIES.indexOf(difficulty) * 8, team, bot: true, look: [{ slot: 'top', effect: { color: PALETTE[2 + (seed % 12)] } }], weapon: botWeapon(pool[i % pool.length], seed) })
+        players.push({ id: `b${i}`, userId: null, name: names[i], level: 1 + AI_DIFFICULTIES.indexOf(difficulty) * 8, team, bot: true, look: [], avatar: botAvatar(seed), weapon: botWeapon(pool[i % pool.length], seed) })
       }
       let i = 0
       if (teamSize === 2) addBot('RED', i++)

@@ -8,11 +8,13 @@ import { api, errorMessage } from '@/lib/api'
 import type { WeaponList } from '@/lib/weapons'
 import { useAuth } from '@/stores/auth'
 import { toast } from '@/stores/toast'
-import { Character, GlowSword, lookFromItems } from '@/three/Character'
+import { Character, GlowSword, lookFromAvatar } from '@/three/Character'
+import type { Avatar } from '@shared/avatar'
 
 interface Profile {
   id: number; nickname: string; level: number; xpInto: number; xpNeed: number; createdAt: string; isMe: boolean; coins?: number
   stats: { totalGames: number; wins: number; losses: number; draws: number; battleScore: number; weaponsCreated: number; friends: number }
+  avatar?: Avatar
   look: { category: string; slot: string; itemId: string; name: string; effect: Record<string, unknown> }[]
   repWeapon: { id: number; name: string; type: WeaponType; previewPng: string } | null
 }
@@ -54,7 +56,7 @@ export default function ProfilePage() {
               <Canvas camera={{ position: [0, 1.3, 3.4], fov: 38 }} onCreated={({ camera }) => camera.lookAt(0, 1.1, 0)}>
                 <ambientLight intensity={0.9} />
                 <directionalLight position={[2, 4, 3]} intensity={1.8} />
-                <Character look={lookFromItems(p.look.filter((l) => l.category === 'COSMETIC'))} rotation={[0, 0.4, 0]} rightHand={<GlowSword />} />
+                <Character look={lookFromAvatar(p.avatar, p.look.filter((l) => l.category === 'COSMETIC'))} rotation={[0, 0.4, 0]} rightHand={<GlowSword />} />
               </Canvas>
             </div>
             <div className="min-w-0 flex-1 text-center sm:text-left">

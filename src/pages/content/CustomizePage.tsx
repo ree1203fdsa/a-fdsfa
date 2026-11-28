@@ -7,7 +7,8 @@ import { COSMETIC_SLOT_NAMES, COSMETIC_SLOTS, type CosmeticSlot } from '@shared/
 import { Button, Confirm, cx, Loading, ScreenHeader } from '@/components/ui'
 import { api, errorMessage } from '@/lib/api'
 import { toast } from '@/stores/toast'
-import { Character, GlowSword, lookFromItems } from '@/three/Character'
+import { Character, GlowSword, lookFromAvatar } from '@/three/Character'
+import { useAuth } from '@/stores/auth'
 
 interface ShopItem { id: string; category: string; slot: string | null; name: string; price: number; effect: Record<string, unknown>; owned: boolean; equipped: boolean }
 
@@ -15,6 +16,7 @@ export default function CustomizePage() {
   const nav = useNavigate()
   const qc = useQueryClient()
   const shop = useQuery({ queryKey: ['shop'], queryFn: () => api.get<{ items: ShopItem[] }>('/shop') })
+  const avatar = useAuth((s) => s.user?.avatar)
   const [slot, setSlot] = useState<CosmeticSlot>('hair')
   const [preview, setPreview] = useState<ShopItem | null>(null)
   const [reset, setReset] = useState(false)
@@ -37,7 +39,7 @@ export default function CustomizePage() {
 
   return (
     <div className="bg-arena flex min-h-[100dvh] flex-col">
-      <ScreenHeader title="캐릭터 꾸미기" sub="CUSTOMIZE" right={<Button size="sm" variant="secondary" onClick={() => setReset(true)}>기본 외형으로</Button>} />
+      <ScreenHeader title="캐릭터 꾸미기" sub="CUSTOMIZE" right={<div className="flex gap-2"><Button size="sm" onClick={() => nav('/character')}>캐릭터 만들기</Button><Button size="sm" variant="secondary" onClick={() => setReset(true)}>기본 외형으로</Button></div>} />
       <div className="flex flex-1 flex-col lg:flex-row">
         <div className="relative h-[42vh] lg:h-auto lg:flex-1">
           <Canvas camera={{ position: [0, 1.4, 4], fov: 38 }}>
@@ -45,7 +47,7 @@ export default function CustomizePage() {
             <directionalLight position={[2, 4, 3]} intensity={1.8} />
             <pointLight position={[-3, 2, -2]} color="#ff3048" intensity={8} />
             <pointLight position={[3, 2, -2]} color="#1e90ff" intensity={8} />
-            <Character look={lookFromItems(shown)} rightHand={<GlowSword />} />
+            <Character look={lookFromAvatar(avatar, shown)} rightHand={<GlowSword />} />
             <mesh rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[1.2, 40]} /><meshStandardMaterial color="#252c73" /></mesh>
             <OrbitControls enablePan={false} minDistance={2.5} maxDistance={6} target={[0, 1.1, 0]} />
           </Canvas>

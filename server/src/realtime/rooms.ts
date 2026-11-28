@@ -6,7 +6,7 @@ import { MAPS } from '../../../shared/maps.ts'
 import { filterChat } from '../../../shared/text.ts'
 import { prisma, parseJson } from '../db.ts'
 import { notify } from '../services/economy.ts'
-import { botWeapon, inBattle, launchBattle, playerLook, playerWeapon } from '../game/matches.ts'
+import { botAvatar, botWeapon, inBattle, launchBattle, playerAvatar, playerLook, playerWeapon } from '../game/matches.ts'
 import { areFriends, isBlockedEitherWay } from '../routes/friends.ts'
 import { setStatus } from './presence.ts'
 import { adminPlay } from '../auth.ts'
@@ -265,14 +265,14 @@ export function setupRooms(io: Server, socket: Socket) {
     if (r.members.length < 2 && !r.fillBots) return reply({ ok: false, error: '인원이 부족해요. 친구를 기다려 주세요.' })
     const players: BattlePlayerInfo[] = []
     for (const m of r.members) {
-      players.push({ id: 'p' + m.userId, userId: m.userId, name: m.nickname, level: m.level, team: m.team, bot: false, staff: m.staff, look: await playerLook(m.userId), weapon: await playerWeapon(m.userId) })
+      players.push({ id: 'p' + m.userId, userId: m.userId, name: m.nickname, level: m.level, team: m.team, bot: false, staff: m.staff, look: await playerLook(m.userId), avatar: await playerAvatar(m.userId), weapon: await playerWeapon(m.userId) })
     }
     if (r.fillBots) {
       let i = 0
       for (const team of ['RED', 'BLUE'] as const) {
         while (players.filter((p) => p.team === team).length < 2) {
           const seed = crypto.randomInt(1000)
-          players.push({ id: 'b' + i, userId: null, name: `AI 도우미 ${i + 1}`, level: 10, team, bot: true, look: [{ slot: 'top', effect: { color: PALETTE[2 + (seed % 12)] } }], weapon: botWeapon(WEAPON_TYPES[seed % WEAPON_TYPES.length], seed) })
+          players.push({ id: 'b' + i, userId: null, name: `AI 도우미 ${i + 1}`, level: 10, team, bot: true, look: [], avatar: botAvatar(seed), weapon: botWeapon(WEAPON_TYPES[seed % WEAPON_TYPES.length], seed) })
           i++
         }
       }

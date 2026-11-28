@@ -1,5 +1,6 @@
+import { lookFromAvatar } from '@/three/Character'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { TutorialModal } from '@/components/Tutorial'
 import { PlayerMenu, StaffBadge } from '@/components/PlayerMenu'
@@ -52,6 +53,15 @@ export default function MainPage() {
     }
   }
   const [notice, setNotice] = useState<HomeData['notices'][number] | null>(null)
+  // New players design their character before anything else.
+  useEffect(() => {
+    if (!user.avatar.created) nav('/character?first=1', { replace: true })
+  }, [user.avatar.created, nav])
+  const myItems = useQuery({ queryKey: ['shop'], queryFn: () => api.get<{ items: { category: string; slot: string | null; effect: Record<string, unknown>; equipped: boolean }[] }>('/shop') })
+  const heroLook = useMemo(
+    () => lookFromAvatar(user.avatar, (myItems.data?.items ?? []).filter((i) => i.category === 'COSMETIC' && i.equipped)),
+    [user.avatar, myItems.data],
+  )
   const [params, setParams] = useSearchParams()
   const [tutorial, setTutorial] = useState(() => params.get('tutorial') === '1' || (!user.tutorialDone && !user.settings.tutorialSlidesSeen))
   const closeTutorial = () => {
@@ -67,7 +77,7 @@ export default function MainPage() {
     <div className="relative h-[100dvh] min-h-[640px] overflow-hidden">
       <div className="absolute inset-0">
         <Suspense fallback={<div className="bg-arena h-full w-full" />}>
-          <LobbyScene quality={user.settings.quality} />
+          <LobbyScene quality={user.settings.quality} look={heroLook} />
         </Suspense>
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(10,12,40,0.55)_100%)]" />
       </div>
@@ -402,7 +412,7 @@ function SideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const items: [string, string, string][] = [
     ['🏠', '로비', '/'], ['🎒', '무기 보관함', '/inventory'], ['🖌️', '무기 제작소', '/workshop'], ['📦', '3D 무기 뷰어', '/viewer'], ['⚔️', '플레이', '/play'],
     ['👥', '친구', '/friends'], ['🎯', '미션', '/missions'], ['📅', '출석 체크', '/attendance'], ['🏆', '랭킹', '/ranking'],
-    ['📖', '무기 도감', '/codex'], ['🎖️', '무기 대회', '/contest'], ['🛒', '상점', '/shop'], ['👕', '캐릭터 꾸미기', '/customize'],
+    ['📖', '무기 도감', '/codex'], ['🎖️', '무기 대회', '/contest'], ['🛒', '상점', '/shop'], ['🧑‍🎨', '캐릭터 만들기', '/character'], ['👕', '캐릭터 꾸미기', '/customize'],
     ['😊', '프로필', '/profile'], ['🔔', '알림', '/notifications'], ['📮', '우편함', '/mail'], ['⚙️', '설정', '/settings'], ['💌', '고객지원', '/support'],
   ]
   if (!open) return null

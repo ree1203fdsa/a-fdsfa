@@ -2,7 +2,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Sparkles } from '@react-three/drei'
 import { useMemo, useRef } from 'react'
 import { BackSide, CanvasTexture, Color, DoubleSide, RepeatWrapping, SRGBColorSpace, type Mesh } from 'three'
-import { Character, GlowSword } from './Character'
+import { Character, GlowSword, type CharacterLook } from './Character'
 
 function makeCanvas(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void) {
   const c = document.createElement('canvas')
@@ -240,7 +240,7 @@ function Floor() {
   )
 }
 
-export default function LobbyScene({ quality = 'medium' }: { quality?: 'low' | 'medium' | 'high' }) {
+export default function LobbyScene({ quality = 'medium', look }: { quality?: 'low' | 'medium' | 'high'; look?: CharacterLook }) {
   const dpr: [number, number] = quality === 'low' ? [0.7, 1] : quality === 'high' ? [1, 2] : [1, 1.5]
   return (
     // Framed like the reference art: camera behind and above the hero, looking up past the gate into open sky.
@@ -257,7 +257,7 @@ export default function LobbyScene({ quality = 'medium' }: { quality?: 'low' | '
 
       <Castle />
       <Floor />
-      <Character position={[0.3, 0, 0.2]} rotation={[0, Math.PI - 0.3, 0]} rightHand={<GlowSword />} />
+      <Character position={[0.3, 0, 0.2]} rotation={[0, Math.PI - 0.3, 0]} look={look} rightHand={<GlowSword />} />
       {quality !== 'low' && <Sparkles count={60} scale={[14, 6, 10]} position={[0, 3, -4]} size={3} speed={0.3} color="#ffe28a" opacity={0.7} />}
     </Canvas>
   )

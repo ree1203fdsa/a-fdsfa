@@ -7,7 +7,7 @@ import type { BattleEvent, BattleInit, BattlePlayerInfo } from '@shared/battle'
 import { MAPS } from '@shared/maps'
 import { sfx } from '@/lib/sound'
 import { battleEvents, interpolatedPlayers, interpolatedProjectiles } from '@/stores/battle'
-import { Character, lookFromItems, type Pose } from '@/three/Character'
+import { Character, lookFromAvatar, type Pose } from '@/three/Character'
 import { MapView } from '@/three/battle/MapView'
 import { buildWeapon } from '@/three/weaponMesh'
 import type { CameraState } from './useBattleInput'
@@ -21,7 +21,7 @@ function Fighter({ info, isMe }: { info: BattlePlayerInfo; isMe: boolean }) {
   const last = useRef(new Vector3())
   const weapon = useMemo(() => buildWeapon(info.weapon.strokes, info.weapon.paperId, info.weapon.type, info.weapon.params), [info])
   useEffect(() => () => weapon?.dispose(), [weapon])
-  const look = useMemo(() => lookFromItems(info.look, TEAM_COLOR[info.team]), [info])
+  const look = useMemo(() => lookFromAvatar(info.avatar, info.look, TEAM_COLOR[info.team]), [info])
 
   useFrame((_, dt) => {
     const p = interpolatedPlayers().get(info.id)

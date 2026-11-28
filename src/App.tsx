@@ -64,6 +64,7 @@ const RankingPage = lazy(() => import('@/pages/content/RankingPage'))
 const CodexPage = lazy(() => import('@/pages/content/CodexPage'))
 const ContestPage = lazy(() => import('@/pages/content/ContestPage'))
 const CustomizePage = lazy(() => import('@/pages/content/CustomizePage'))
+const CharacterPage = lazy(() => import('@/pages/content/CharacterPage'))
 const SupportPage = lazy(() => import('@/pages/content/SupportPage'))
 const AdminLayout = lazy(() => import('@/pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })))
 const AdminLogin = lazy(() => import('@/pages/admin/AdminLayout').then((m) => ({ default: m.AdminLogin })))
@@ -122,6 +123,7 @@ export default function App() {
         <Route path="/codex" element={<RequireAuth><CodexPage /></RequireAuth>} />
         <Route path="/contest" element={<RequireAuth><ContestPage /></RequireAuth>} />
         <Route path="/customize" element={<RequireAuth><CustomizePage /></RequireAuth>} />
+        <Route path="/character" element={<RequireAuth><CharacterPage /></RequireAuth>} />
         <Route path="/admin/login" element={<Suspense fallback={<FullLoading />}><AdminLogin /></Suspense>} />
         <Route path="/admin" element={<Suspense fallback={<FullLoading />}><AdminLayout /></Suspense>}>
           <Route index element={<AdminDashboard />} />

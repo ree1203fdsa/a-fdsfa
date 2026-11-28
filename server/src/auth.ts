@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { checkNickname, checkPassword, checkUsername } from '../../shared/text.ts'
 import { ROLES, type Role } from '../../shared/constants.ts'
 import { levelFromXp } from '../../shared/progression.ts'
+import { sanitizeAvatar } from '../../shared/avatar.ts'
 import { prisma, parseJson } from './db.ts'
 import { bad, forbidden, HttpError, parse, rateLimit } from './http.ts'
 import { grant, notify } from './services/economy.ts'
@@ -151,7 +152,7 @@ export function meView(u: User) {
   const lv = levelFromXp(u.xp)
   return {
     id: u.id, username: u.username, nickname: u.nickname, level: u.level, xp: u.xp, xpInto: lv.into, xpNeed: lv.need,
-    coins: u.coins, avatar: parseJson(u.avatar, {}), profile: parseJson(u.profile, {}), repWeaponId: u.repWeaponId,
+    coins: u.coins, avatar: sanitizeAvatar(parseJson(u.avatar, {})), profile: parseJson(u.profile, {}), repWeaponId: u.repWeaponId,
     equippedWeaponId: u.equippedWeaponId, inventorySlots: u.inventorySlots, tutorialDone: u.tutorialDone,
     settings: parseJson(u.settings, {}), isStaff: isStaff(u.role), role: u.role, adminPlay: adminPlay(u),
     stats: { totalGames: u.totalGames, wins: u.wins, losses: u.losses, draws: u.draws, battleScore: u.battleScore, weaponsCreated: u.weaponsCreated },
