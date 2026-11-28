@@ -75,9 +75,9 @@ function floorTexture() {
 }
 
 function Sky() {
-  const uniforms = useMemo(() => ({ top: { value: new Color('#3b2fb8') }, mid: { value: new Color('#4f7cff') }, bottom: { value: new Color('#b9d4ff') } }), [])
+  const uniforms = useMemo(() => ({ top: { value: new Color('#2f6bff') }, mid: { value: new Color('#6fa8ff') }, bottom: { value: new Color('#d6e8ff') } }), [])
   return (
-    <mesh scale={80}>
+    <mesh scale={95}>
       <sphereGeometry args={[1, 32, 16]} />
       <shaderMaterial
         side={BackSide}
@@ -98,8 +98,8 @@ function Clouds() {
     g.fillStyle = r
     g.fillRect(0, 0, 128, 128)
   }), [])
-  const puffs = useMemo(() => Array.from({ length: 22 }, (_, i) => {
-    const a = (i / 22) * Math.PI * 2
+  const puffs = useMemo(() => Array.from({ length: 34 }, (_, i) => {
+    const a = (i / 34) * Math.PI * 2
     return { pos: [Math.cos(a) * 40, 10 + (i % 4) * 3, Math.sin(a) * 40 - 10] as [number, number, number], s: 10 + (i % 5) * 3 }
   }), [])
   return (
@@ -132,8 +132,8 @@ function Castle() {
   const red = useMemo(() => bannerTexture('#ff3048', '#a0102a'), [])
   const blue = useMemo(() => bannerTexture('#1e90ff', '#0a3f9a'), [])
   const gold = '#ffc21a'
-  const R = 15
-  const segments = 14
+  const R = 22
+  const segments = 18
   return (
     <group>
       {Array.from({ length: segments }, (_, i) => {
@@ -148,14 +148,14 @@ function Castle() {
           <group key={i} position={[x, 0, z]} rotation={[0, -a - Math.PI / 2, 0]}>
             <mesh position={[0, 2.6, 0]} castShadow receiveShadow>
               <boxGeometry args={[len, 5.2, 1.4]} />
-              <meshStandardMaterial map={stone} color="#c8d0ff" roughness={0.95} />
+              <meshStandardMaterial map={stone} color="#dfe5ff" emissive="#5b6bc4" emissiveIntensity={0.35} roughness={0.95} />
             </mesh>
             <group position={[0, 5.5, 0]}><Battlements y={0} length={len} depth={1.4} /></group>
             {isTower && (
               <group position={[0, 0, 0.3]}>
                 <mesh position={[0, 4.2, 0]} castShadow>
                   <cylinderGeometry args={[1.5, 1.7, 8.4, 12]} />
-                  <meshStandardMaterial map={stone} color="#bcc5ff" roughness={0.95} />
+                  <meshStandardMaterial map={stone} color="#d6ddff" emissive="#5b6bc4" emissiveIntensity={0.35} roughness={0.95} />
                 </mesh>
                 {Array.from({ length: 8 }, (_, k) => (
                   <mesh key={k} position={[Math.cos((k / 8) * Math.PI * 2) * 1.4, 8.7, Math.sin((k / 8) * Math.PI * 2) * 1.4]}>
@@ -166,8 +166,8 @@ function Castle() {
               </group>
             )}
             {!isTower && (
-              <mesh position={[0, 3.2, 0.72]}>
-                <planeGeometry args={[1.5, 3]} />
+              <mesh position={[0, 2.9, 0.72]}>
+                <planeGeometry args={[2.4, 4.4]} />
                 <meshStandardMaterial map={left ? red : blue} transparent side={DoubleSide} roughness={0.8} emissive={left ? '#ff3048' : '#1e90ff'} emissiveIntensity={0.15} />
               </mesh>
             )}
@@ -180,16 +180,16 @@ function Castle() {
 
       {/* main gate with golden crown */}
       <group position={[0, 0, -R - 0.5]}>
-        <mesh position={[0, 4, 0]} castShadow>
-          <boxGeometry args={[7, 8, 3]} />
-          <meshStandardMaterial map={stone} color="#c3cbff" roughness={0.95} />
+        <mesh position={[0, 4.5, 0]} castShadow>
+          <boxGeometry args={[10, 9, 3]} />
+          <meshStandardMaterial map={stone} color="#dfe5ff" emissive="#5b6bc4" emissiveIntensity={0.35} roughness={0.95} />
         </mesh>
-        <mesh position={[0, 2, 1.52]}>
-          <planeGeometry args={[2.6, 4]} />
+        <mesh position={[0, 2.6, 1.52]}>
+          <planeGeometry args={[3.6, 5.2]} />
           <meshStandardMaterial color="#141633" emissive="#3b1e7a" emissiveIntensity={0.6} />
         </mesh>
-        <group position={[0, 8.3, 0]}><Battlements y={0} length={7} depth={3} /></group>
-        <group position={[0, 9.8, 0]}>
+        <group position={[0, 9.3, 0]}><Battlements y={0} length={10} depth={3} /></group>
+        <group position={[0, 10.9, 0]} scale={1.6}>
           <mesh>
             <cylinderGeometry args={[0.9, 0.9, 0.5, 16, 1, true]} />
             <meshStandardMaterial color={gold} metalness={0.8} roughness={0.25} emissive={gold} emissiveIntensity={0.25} side={DoubleSide} />
@@ -216,7 +216,7 @@ function Floor() {
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[16, 64]} />
+        <circleGeometry args={[24, 64]} />
         <meshStandardMaterial map={tex} roughness={0.85} />
       </mesh>
       <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
@@ -228,11 +228,11 @@ function Floor() {
         <meshBasicMaterial color="#47b4ff" transparent opacity={0.7} />
       </mesh>
       {/* red and blue paint splats */}
-      <mesh rotation={[-Math.PI / 2, 0, 0.4]} position={[-6, 0.008, -5]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0.4]} position={[-8, 0.008, -7]}>
         <circleGeometry args={[2.4, 9]} />
         <meshStandardMaterial color="#ff3048" roughness={0.3} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, -0.3]} position={[6.5, 0.008, -4]}>
+      <mesh rotation={[-Math.PI / 2, 0, -0.3]} position={[8.5, 0.008, -6]}>
         <circleGeometry args={[2.6, 9]} />
         <meshStandardMaterial color="#1e90ff" roughness={0.3} />
       </mesh>
@@ -243,18 +243,21 @@ function Floor() {
 export default function LobbyScene({ quality = 'medium' }: { quality?: 'low' | 'medium' | 'high' }) {
   const dpr: [number, number] = quality === 'low' ? [0.7, 1] : quality === 'high' ? [1, 2] : [1, 1.5]
   return (
-    <Canvas shadows={quality !== 'low'} dpr={dpr} camera={{ position: [0.9, 2.3, 4.4], fov: 45 }} gl={{ antialias: quality !== 'low' }} onCreated={({ camera }) => camera.lookAt(0, 2.4, -6)}>
-      <fog attach="fog" args={['#8fb2ff', 22, 60]} />
+    // Framed like the reference art: camera behind and above the hero, looking up past the gate into open sky.
+    <Canvas shadows={quality !== 'low'} dpr={dpr} camera={{ position: [0, 2.7, 6.2], fov: 52 }} gl={{ antialias: quality !== 'low' }} onCreated={({ camera }) => camera.lookAt(0, 4.2, -14)}>
+      <fog attach="fog" args={['#a9c6ff', 34, 90]} />
       <Sky />
       <Clouds />
-      <hemisphereLight args={['#cfe0ff', '#3a2f7a', 1.3]} />
-      <directionalLight position={[6, 12, 8]} intensity={2.2} color="#fff3dc" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-8} shadow-camera-right={8} shadow-camera-top={8} shadow-camera-bottom={-8} />
-      <pointLight position={[-6, 3, -2]} intensity={25} color="#ff3048" distance={14} />
-      <pointLight position={[6, 3, -2]} intensity={25} color="#1e90ff" distance={14} />
+      <hemisphereLight args={['#e6f0ff', '#5a4fa0', 1.9]} />
+      <directionalLight position={[8, 16, 10]} intensity={2.6} color="#fff6e2" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-10} shadow-camera-right={10} shadow-camera-top={10} shadow-camera-bottom={-10} />
+      {/* fill light so the hero's back isn't a black silhouette */}
+      <spotLight position={[0, 6, 8]} angle={0.5} penumbra={0.8} intensity={60} color="#ffffff" />
+      <pointLight position={[-8, 4, -4]} intensity={40} color="#ff3048" distance={20} />
+      <pointLight position={[8, 4, -4]} intensity={40} color="#1e90ff" distance={20} />
 
       <Castle />
       <Floor />
-      <Character position={[0, 0, 0]} rotation={[0, Math.PI - 0.35, 0]} rightHand={<GlowSword />} />
+      <Character position={[0.3, 0, 0.2]} rotation={[0, Math.PI - 0.3, 0]} rightHand={<GlowSword />} />
       {quality !== 'low' && <Sparkles count={60} scale={[14, 6, 10]} position={[0, 3, -4]} size={3} speed={0.3} color="#ffe28a" opacity={0.7} />}
     </Canvas>
   )
