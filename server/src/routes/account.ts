@@ -3,8 +3,8 @@ import { z } from 'zod'
 import { ATTENDANCE_REWARDS } from '../../../shared/constants.ts'
 import { kstDateKey, previousKstDateKey, levelFromXp } from '../../../shared/progression.ts'
 import { prisma, parseJson } from '../db.ts'
-import { bad, idParam, notFound, parse } from '../http.ts'
-import { meView } from '../auth.ts'
+import { bad, forbidden, idParam, notFound, parse } from '../http.ts'
+import { isStaff, meView } from '../auth.ts'
 import { grant, notify } from '../services/economy.ts'
 import { progress } from '../services/missions.ts'
 import { weaponView } from './weapons.ts'
@@ -157,6 +157,20 @@ meRouter.put('/profile', async (req, res) => {
   }
   await prisma.user.update({ where: { id: req.user!.id }, data: { repWeaponId } })
   res.json({ ok: true })
+})
+
+meRouter.put('/play-mode', async (req, res) => {
+  const { mode } = parse(z.object({ mode: z.enum(['admin', 'player']) }), req.body)
+  const u = req.user!
+  if (mode === 'admin' && !isStaff(u.role)) throw forbidden('운영진만 관리자로 플레이할 수 있어요.')
+  const s = parseJson<Record<string, unknown>>(u.settings, {})
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: u.id }, data: { settings: JSON.stringify({ ...s, playMode: mode }) } })
+    // Items only borrowed in admin mode (quantity 0) are taken off when going back to normal play.
+    if (mode === 'player') await tx.userItem.updateMany({ where: { userId: u.id, quantity: 0 }, data: { equipped: false } })
+  })
+  const fresh = await prisma.user.findUniqueOrThrow({ where: { id: u.id } })
+  res.json({ user: meView(fresh) })
 })
 
 meRouter.post('/tutorial-seen', async (req, res) => {

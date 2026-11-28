@@ -4,6 +4,7 @@ import { MAX_INVENTORY_SLOTS } from '../../../shared/constants.ts'
 import { prisma, parseJson } from '../db.ts'
 import { bad, conflict, notFound, parse, rateLimit } from '../http.ts'
 import { changeCoins, notify } from '../services/economy.ts'
+import { adminPlay } from '../auth.ts'
 
 export const shopRouter = Router()
 export const itemsRouter = Router()
@@ -15,10 +16,14 @@ shopRouter.get('/', async (req, res) => {
     prisma.userItem.findMany({ where: { userId: req.user!.id } }),
     prisma.paper.findMany({ orderBy: { sortOrder: 'asc' } }),
   ])
-  const ownedMap = new Map(owned.map((o) => [o.itemId, o]))
+  const admin = adminPlay(req.user!)
+  // quantity 0 = borrowed in admin mode; only counts as owned while in admin mode.
+  const ownedMap = new Map(owned.filter((o) => admin || o.quantity > 0).map((o) => [o.itemId, o]))
+  const isOwned = (id: string, category: string) => ownedMap.has(id) || (admin && category !== 'SLOT')
   res.json({
     coins: req.user!.coins,
     level: req.user!.level,
+    adminPlay: admin,
     slots: req.user!.inventorySlots,
     maxSlots: MAX_INVENTORY_SLOTS,
     items: items
@@ -27,9 +32,9 @@ shopRouter.get('/', async (req, res) => {
         id: i.id, category: i.category, slot: i.slot, name: i.name, description: i.description, price: i.price,
         effect: parseJson(i.effect, {}), limited: i.limited, stock: i.stock,
         available: i.onSale && (!i.saleEndAt || i.saleEndAt > now) && (i.stock === null || i.stock > 0),
-        owned: ownedMap.has(i.id), equipped: ownedMap.get(i.id)?.equipped ?? false,
+        owned: isOwned(i.id, i.category), equipped: ownedMap.get(i.id)?.equipped ?? false,
       })),
-    papers: papers.map((p) => ({ id: p.id, name: p.name, unlockLevel: p.unlockLevel, unlocked: p.unlockLevel <= req.user!.level })),
+    papers: papers.map((p) => ({ id: p.id, name: p.name, unlockLevel: p.unlockLevel, unlocked: admin || p.unlockLevel <= req.user!.level })),
   })
 })
 
@@ -50,9 +55,10 @@ shopRouter.post('/buy', rateLimit('buy', 30, 60_000), async (req, res) => {
       await tx.user.update({ where: { id: userId }, data: { inventorySlots: Math.min(MAX_INVENTORY_SLOTS, u.inventorySlots + add) } })
     } else {
       const has = await tx.userItem.findUnique({ where: { userId_itemId: { userId, itemId } } })
-      if (has) throw conflict('이미 가지고 있는 아이템이에요.', 'ALREADY_OWNED')
+      if (has && has.quantity > 0) throw conflict('이미 가지고 있는 아이템이에요.', 'ALREADY_OWNED')
       await changeCoins(tx, userId, -item.price, `구매: ${item.name}`, 'item', item.id)
-      await tx.userItem.create({ data: { userId, itemId } })
+      if (has) await tx.userItem.update({ where: { id: has.id }, data: { quantity: 1 } })
+      else await tx.userItem.create({ data: { userId, itemId } })
     }
     if (item.stock !== null) await tx.item.update({ where: { id: item.id }, data: { stock: { decrement: 1 } } })
     await tx.purchase.create({ data: { userId, itemId: item.id, price: item.price } })
@@ -74,8 +80,14 @@ shopRouter.get('/history', async (req, res) => {
 itemsRouter.post('/equip', async (req, res) => {
   const { itemId, equip } = parse(z.object({ itemId: z.string().max(60), equip: z.boolean() }), req.body)
   const userId = req.user!.id
+  const admin = adminPlay(req.user!)
   await prisma.$transaction(async (tx) => {
-    const ui = await tx.userItem.findUnique({ where: { userId_itemId: { userId, itemId } }, include: { item: true } })
+    let ui = await tx.userItem.findUnique({ where: { userId_itemId: { userId, itemId } }, include: { item: true } })
+    if (ui && ui.quantity === 0 && !admin) ui = null
+    // Admin mode lends any item (quantity 0) so staff can try it on without buying.
+    if (!ui && admin && (await tx.item.findFirst({ where: { id: itemId, deletedAt: null } }))) {
+      ui = await tx.userItem.create({ data: { userId, itemId, quantity: 0 }, include: { item: true } })
+    }
     if (!ui) throw notFound('가지고 있지 않은 아이템이에요.')
     if (ui.item.category === 'SLOT') throw bad('장착할 수 없는 아이템이에요.')
     if (equip && ui.item.slot) {

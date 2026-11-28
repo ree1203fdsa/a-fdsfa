@@ -144,6 +144,7 @@ function Hud({ init }: { init: BattleInit }) {
           {(meSnap?.sp ?? 0) >= 100 ? `✨ ${WEAPON_INFO[myInfo.weapon.type].specialName} 준비 완료! (Q)` : `특수 기술 ${meSnap?.sp ?? 0}%`}
         </p>
       </div>
+      {myInfo.staff && <div className="absolute left-1/2 top-12 -translate-x-1/2 rounded-lg bg-red/80 px-3 py-1 text-xs font-bold">🛡️ 관리자 시험 모드 · 무적 · 특수 기술 무한 · 보상·기록 없음</div>}
       {meSnap && !meSnap.alive && (
         <div className="absolute inset-x-0 top-1/3 text-center">
           <p className="text-outline font-display text-4xl">쓰러졌어요!</p>

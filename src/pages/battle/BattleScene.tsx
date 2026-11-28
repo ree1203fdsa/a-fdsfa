@@ -49,7 +49,7 @@ function Fighter({ info, isMe }: { info: BattlePlayerInfo; isMe: boolean }) {
       </mesh>
       <Html position={[0, 2.75, 0]} center distanceFactor={9} zIndexRange={[10, 0]}>
         <div className="pointer-events-none w-24 select-none text-center">
-          <p className="truncate text-xs font-bold text-white" style={{ textShadow: '0 1px 2px #000' }}>{isMe ? '나' : info.name}</p>
+          <p className="truncate text-xs font-bold text-white" style={{ textShadow: '0 1px 2px #000' }}>{info.staff && '🛡️'}{isMe ? '나' : info.name}</p>
           <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-black/60">
             <div ref={hpBar} className="h-full rounded-full transition-[width]" style={{ width: '100%', background: TEAM_COLOR[info.team] }} />
           </div>

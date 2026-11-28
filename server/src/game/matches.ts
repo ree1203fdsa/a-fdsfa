@@ -10,6 +10,7 @@ import { progress } from '../services/missions.ts'
 import { Battle } from './engine.ts'
 import { think } from './ai.ts'
 import { setStatus } from '../realtime/presence.ts'
+import { adminPlay } from '../auth.ts'
 
 const battles = new Map<number, Battle>()
 const userBattle = new Map<number, { matchId: number; fighterId: string }>()
@@ -111,7 +112,7 @@ async function finishMatch(io: Server, battle: Battle, result: BattleResult) {
     const f = battle.fighter(p.id)!
     const outcome: 'WIN' | 'LOSS' | 'DRAW' = result.winner === 'DRAW' ? 'DRAW' : result.winner === p.team ? 'WIN' : 'LOSS'
     // Counted only if the player was connected and actually played (not AFK, not an aborted match).
-    const valid = Boolean(p.userId) && result.reason !== 'abandon' && f.connected && result.durationSec >= 15 && f.inputs >= result.durationSec * 3 && f.lastActiveAt > 0
+    const valid = Boolean(p.userId) && !f.info.staff && result.reason !== 'abandon' && f.connected && result.durationSec >= 15 && f.inputs >= result.durationSec * 3 && f.lastActiveAt > 0
     let coins = 0, xp = 0, levelUps: number[] = []
     if (p.userId) {
       const friendsInMatch = battle.mode === 'FRIEND' && humanIds.length > 1
@@ -154,7 +155,7 @@ async function finishMatch(io: Server, battle: Battle, result: BattleResult) {
       userBattle.delete(p.userId)
       if (battle.mode === 'AI') setStatus(p.userId, 'online')
       io.to('user:' + p.userId).emit('battle:end', { ...result, reward: { coins, xp, levelUps, valid, result: outcome } } satisfies BattleResult)
-      if (!valid && result.reason !== 'abandon') {
+      if (!valid && result.reason !== 'abandon' && !f.info.staff) {
         await notify(prisma, p.userId, 'REWARD', '전투 보상을 받지 못했어요', '전투에 거의 참여하지 않았거나 연결이 끊겨서 보상이 지급되지 않았어요.')
       }
     } else {
@@ -192,7 +193,7 @@ export function setupBattleSockets(io: Server, socket: Socket) {
       const teamSize = o.teamSize === 1 ? 1 : 2
       const u = await prisma.user.findUniqueOrThrow({ where: { id: userId } })
       const players: BattlePlayerInfo[] = [
-        { id: 'p' + userId, userId, name: u.nickname, level: u.level, team: 'RED', bot: false, look: await playerLook(userId), weapon: await playerWeapon(userId) },
+        { id: 'p' + userId, userId, name: u.nickname, level: u.level, team: 'RED', bot: false, staff: adminPlay(u), look: await playerLook(userId), weapon: await playerWeapon(userId) },
       ]
       const pool = [...WEAPON_TYPES].sort(() => Math.random() - 0.5)
       const names = [...BOT_NAMES].sort(() => Math.random() - 0.5)

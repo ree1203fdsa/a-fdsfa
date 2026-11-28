@@ -15,6 +15,8 @@ export interface Me {
   tutorialDone: boolean
   settings: Settings
   isStaff: boolean
+  role: string
+  adminPlay: boolean
   stats: { totalGames: number; wins: number; losses: number; draws: number; battleScore: number; weaponsCreated: number }
   createdAt: string
 }

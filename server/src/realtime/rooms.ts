@@ -9,8 +9,9 @@ import { notify } from '../services/economy.ts'
 import { botWeapon, inBattle, launchBattle, playerLook, playerWeapon } from '../game/matches.ts'
 import { areFriends, isBlockedEitherWay } from '../routes/friends.ts'
 import { setStatus } from './presence.ts'
+import { adminPlay } from '../auth.ts'
 
-interface Member { userId: number; nickname: string; level: number; team: Team; ready: boolean; weapon: string; weaponType: string; connected: boolean }
+interface Member { userId: number; nickname: string; level: number; team: Team; ready: boolean; weapon: string; weaponType: string; connected: boolean; staff: boolean }
 interface ChatLine { id: number; nickname: string; text: string; at: number; system?: boolean }
 export interface Room {
   dbId: number
@@ -64,7 +65,7 @@ function system(r: Room, text: string) {
 async function memberFor(userId: number, team: Team): Promise<Member> {
   const u = await prisma.user.findUniqueOrThrow({ where: { id: userId } })
   const w = await playerWeapon(userId)
-  return { userId, nickname: u.nickname, level: u.level, team, ready: false, weapon: w.name, weaponType: w.type, connected: true }
+  return { userId, nickname: u.nickname, level: u.level, team, ready: false, weapon: w.name, weaponType: w.type, connected: true, staff: adminPlay(u) }
 }
 
 function teamCount(r: Room, t: Team) {
@@ -264,7 +265,7 @@ export function setupRooms(io: Server, socket: Socket) {
     if (r.members.length < 2 && !r.fillBots) return reply({ ok: false, error: '인원이 부족해요. 친구를 기다려 주세요.' })
     const players: BattlePlayerInfo[] = []
     for (const m of r.members) {
-      players.push({ id: 'p' + m.userId, userId: m.userId, name: m.nickname, level: m.level, team: m.team, bot: false, look: await playerLook(m.userId), weapon: await playerWeapon(m.userId) })
+      players.push({ id: 'p' + m.userId, userId: m.userId, name: m.nickname, level: m.level, team: m.team, bot: false, staff: m.staff, look: await playerLook(m.userId), weapon: await playerWeapon(m.userId) })
     }
     if (r.fillBots) {
       let i = 0
@@ -315,4 +316,15 @@ export function setupRooms(io: Server, socket: Socket) {
       if (still && still.status === 'WAITING' && !still.members.find((x) => x.userId === userId)?.connected) void removeMember(io, still, userId, '연결이 끊어졌어요.')
     }, 30_000))
   })
+}
+
+/** In-game moderation: a staff member in admin mode removes a player from whatever room they're in. */
+export async function staffKickFromRoom(io: Server, userId: number) {
+  const code = userRoom.get(userId)
+  const r = code ? rooms.get(code) : undefined
+  if (!r || r.status !== 'WAITING') return false
+  r.kicked.add(userId)
+  io.to('user:' + userId).emit('room:kicked', { code: r.code })
+  await removeMember(io, r, userId, '운영진에 의해 방에서 내보내졌어요.')
+  return true
 }

@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { TutorialModal } from '@/components/Tutorial'
+import { PlayerMenu, StaffBadge } from '@/components/PlayerMenu'
 import { Button, cx, IconButton, Logo, Modal, Progress } from '@/components/ui'
 import { api, errorMessage } from '@/lib/api'
 import { useCountdown } from '@/lib/hooks'
@@ -36,6 +37,18 @@ export default function MainPage() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [howTo, setHowTo] = useState(false)
   const [adminMenu, setAdminMenu] = useState(false)
+  const qc = useQueryClient()
+  async function switchMode(mode: 'admin' | 'player') {
+    try {
+      const r = await api.put<{ user: typeof user }>('/me/play-mode', { mode })
+      useAuth.getState().setUser(r.user)
+      await qc.invalidateQueries()
+      toast.success(mode === 'admin' ? '🛡️ 관리자로 플레이해요.' : '🎮 일반 유저로 플레이해요.')
+      setAdminMenu(false)
+    } catch (e) {
+      toast.error(errorMessage(e))
+    }
+  }
   const [notice, setNotice] = useState<HomeData['notices'][number] | null>(null)
   const [params, setParams] = useSearchParams()
   const [tutorial, setTutorial] = useState(() => params.get('tutorial') === '1' || (!user.tutorialDone && !user.settings.tutorialSlidesSeen))
@@ -87,7 +100,7 @@ export default function MainPage() {
               className="gloss flex h-12 items-center gap-1.5 rounded-2xl bg-gradient-to-b from-[#ff6b7c] to-red px-3 font-display text-white"
               aria-label="관리자 메뉴"
             >
-              🛡️ <span className="hidden sm:inline">관리자</span>
+              🛡️ <span className="hidden sm:inline">{user.adminPlay ? '관리자 모드' : '관리자'}</span>
             </button>
           )}
         </header>
@@ -132,18 +145,29 @@ export default function MainPage() {
       <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       <HowToModal open={howTo} onClose={() => setHowTo(false)} />
       <TutorialModal open={tutorial} onClose={closeTutorial} rewardPending={!user.tutorialDone} />
-      <Modal open={adminMenu} onClose={() => setAdminMenu(false)} title="🛡️ 관리자 메뉴">
-        <p className="mb-4 text-sm text-dim">어떻게 할까요?</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <button onClick={() => setAdminMenu(false)} className="gloss flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-b from-[#5cb6ff] to-blue p-5 text-white">
+      <Modal open={adminMenu} onClose={() => setAdminMenu(false)} title="🛡️ 관리자 메뉴" wide>
+        <p className="mb-4 text-sm text-dim">지금: <b className="text-text">{user.adminPlay ? '🛡️ 관리자로 플레이 중' : '🎮 일반 유저로 플레이 중'}</b></p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <button
+            onClick={() => switchMode('player')}
+            className={cx('gloss flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-b from-[#5cb6ff] to-blue p-5 text-white', !user.adminPlay && 'ring-4 ring-accent')}
+          >
             <span className="text-4xl">🎮</span>
-            <span className="font-display text-xl">일반 플레이로 플레이</span>
-            <span className="text-xs text-white/85">일반 플레이어처럼 게임을 계속해요</span>
+            <span className="font-display text-xl">일반 유저로 플레이</span>
+            <span className="text-xs text-white/85">다른 플레이어와 똑같이 플레이해요. 보상·랭킹도 정상으로 기록돼요.</span>
           </button>
-          <button onClick={() => nav(`/admin/login?u=${encodeURIComponent(user.username)}`)} className="gloss flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-b from-[#ff6b7c] to-red p-5 text-white">
+          <button
+            onClick={() => switchMode('admin')}
+            className={cx('gloss flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-b from-[#ff6b7c] to-red p-5 text-white', user.adminPlay && 'ring-4 ring-accent')}
+          >
+            <span className="text-4xl">🛡️</span>
+            <span className="font-display text-xl">관리자로 플레이</span>
+            <span className="text-xs text-white/85">관리자 표시 · 모든 아이템 · 전투 무적 · 게임 안 관리 기능. 보상·랭킹 기록 없음.</span>
+          </button>
+          <button onClick={() => nav(`/admin/login?u=${encodeURIComponent(user.username)}`)} className="gloss flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-b from-[#ac78ff] to-violet p-5 text-white">
             <span className="text-4xl">🛠️</span>
-            <span className="font-display text-xl">관리자로 전환</span>
-            <span className="text-xs text-white/85">관리자 센터로 이동해요</span>
+            <span className="font-display text-xl">관리자 센터</span>
+            <span className="text-xs text-white/85">회원·상점·공지 등을 관리하는 화면으로 가요.</span>
           </button>
         </div>
       </Modal>
@@ -280,11 +304,12 @@ function MissionCard({ data, loading }: { data?: HomeData; loading: boolean }) {
   )
 }
 
-interface ChatMsg { id: number; userId: number; nickname: string; level: number; text: string; at: number }
+interface ChatMsg { id: number; userId: number; nickname: string; level: number; text: string; at: number; staff?: boolean }
 
 function LobbyChat() {
   const me = useAuth((s) => s.user)!
   const [msgs, setMsgs] = useState<ChatMsg[]>([])
+  const [target, setTarget] = useState<ChatMsg | null>(null)
   const [text, setText] = useState('')
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
@@ -323,12 +348,23 @@ function LobbyChat() {
         <div ref={box} onClick={() => setOpen(!open)} className={cx('cursor-pointer space-y-0.5 overflow-y-auto rounded-xl bg-ink/55 px-3 py-2 text-sm backdrop-blur scrollbar-thin', open ? 'max-h-56' : 'max-h-24')}>
           {shown.map((m) => (
             <p key={m.id} className="break-words">
-              <b className={m.userId === me.id ? 'text-accent' : 'text-[#9fd2ff]'}>{m.nickname}</b>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (m.userId !== me.id) setTarget(m)
+                }}
+                className={cx('font-bold', m.userId === me.id ? 'text-accent' : 'text-[#9fd2ff] hover:underline')}
+              >
+                {m.nickname}
+              </button>
+              <StaffBadge show={m.staff} />
               <span className="text-white/90">: {m.text}</span>
             </p>
           ))}
         </div>
       )}
+      <PlayerMenu player={target} context={target?.text} onClose={() => setTarget(null)} />
       <form onSubmit={send} className="panel cut-lg flex h-14 items-center gap-2 pl-2 pr-1.5">
         <span className="grid size-9 place-items-center rounded-full bg-white text-lg">💬</span>
         <input value={text} onChange={(e) => setText(e.target.value)} maxLength={100} placeholder="메시지를 입력하세요..." className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-dim" />

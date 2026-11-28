@@ -178,7 +178,7 @@ export class Battle {
     f.prev = inp
     if (!f.alive) return
     const now = this.time
-    f.sp = Math.min(100, f.sp + 1.2 * DT * f.prof.specialRate)
+    f.sp = f.info.staff ? 100 : Math.min(100, f.sp + 1.2 * DT * f.prof.specialRate)
     if (f.reloadUntil && now >= f.reloadUntil) {
       f.reloadUntil = 0
       f.ammo = f.prof.magazine
@@ -452,6 +452,11 @@ export class Battle {
 
   private damage(from: Fighter, to: Fighter, raw: number, crit: boolean, src?: [number, number]) {
     if (!to.alive || this.time < to.dodgeUntil) return
+    if (to.info.staff) {
+      // Admin test mode: hits register visually but never hurt.
+      this.events.push({ e: 'hit', from: from.id, to: to.id, dmg: 0, x: to.x, y: to.y + 1.2, z: to.z, blocked: true, crit: false })
+      return
+    }
     let dmg = raw
     let blocked = false
     if (this.time < to.shieldUntil) dmg *= 0.3

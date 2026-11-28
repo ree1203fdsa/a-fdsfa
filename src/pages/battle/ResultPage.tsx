@@ -53,7 +53,7 @@ export default function ResultPage() {
               {result.reward.levelUps.length > 0 && <p className="mt-2 animate-pulse font-display text-xl text-accent-2">🎉 레벨 {result.reward.levelUps.at(-1)} 달성!</p>}
             </>
           ) : (
-            <p className="text-sm text-dim">전투에 충분히 참여하지 않았거나 중간에 나가서 보상이 없어요.</p>
+            <p className="text-sm text-dim">{init.players.find((x) => x.id === init.you)?.staff ? '🛡️ 관리자로 플레이한 판이라 보상과 기록이 남지 않아요.' : '전투에 충분히 참여하지 않았거나 중간에 나가서 보상이 없어요.'}</p>
           )}
         </div>
       )}

@@ -47,6 +47,8 @@ export interface BattlePlayerInfo {
   level: number
   team: Team
   bot: boolean
+  /** Staff playing in admin mode: shown with a badge, invincible, special always ready, no rewards. */
+  staff?: boolean
   look: { slot: string | null; effect: Record<string, unknown> }[]
   weapon: BattleWeaponInfo
 }

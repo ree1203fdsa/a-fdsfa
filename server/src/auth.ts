@@ -128,6 +128,11 @@ export const hasPermission = (role: string, p: Permission) => (RANK[role as Role
 export const isStaff = (role: string) => (RANK[role as Role] ?? 0) >= RANK.MODERATOR
 export const roleRank = (role: string) => RANK[role as Role] ?? 0
 
+/** Staff who picked "관리자로 플레이": badge, all items, battle test powers, in-game moderation. */
+export function adminPlay(u: { role: string; settings: string }) {
+  return isStaff(u.role) && parseJson<{ playMode?: string }>(u.settings, {}).playMode === 'admin'
+}
+
 export async function loadAdmin(req: Request, _res: Response, next: NextFunction) {
   const u = await userFromToken(req.cookies?.[ADMIN_COOKIE], 'ADMIN')
   if (u && isStaff(u.role) && !accountBlockReason(u)) req.admin = u
@@ -148,7 +153,7 @@ export function meView(u: User) {
     id: u.id, username: u.username, nickname: u.nickname, level: u.level, xp: u.xp, xpInto: lv.into, xpNeed: lv.need,
     coins: u.coins, avatar: parseJson(u.avatar, {}), profile: parseJson(u.profile, {}), repWeaponId: u.repWeaponId,
     equippedWeaponId: u.equippedWeaponId, inventorySlots: u.inventorySlots, tutorialDone: u.tutorialDone,
-    settings: parseJson(u.settings, {}), isStaff: isStaff(u.role),
+    settings: parseJson(u.settings, {}), isStaff: isStaff(u.role), role: u.role, adminPlay: adminPlay(u),
     stats: { totalGames: u.totalGames, wins: u.wins, losses: u.losses, draws: u.draws, battleScore: u.battleScore, weaponsCreated: u.weaponsCreated },
     createdAt: u.createdAt,
   }

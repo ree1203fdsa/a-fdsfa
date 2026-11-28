@@ -31,11 +31,17 @@ export function RealtimeBridge() {
       void qc.invalidateQueries({ queryKey: ['home'] })
       void qc.invalidateQueries({ queryKey: ['notifications'] })
     }
+    const onSuspended = (d: { days: number; reason: string }) => {
+      toast.error(`운영진이 계정을 ${d.days}일 정지했어요. (${d.reason})`)
+      useAuth.getState().setUser(null)
+    }
     s.on('wallet', onWallet)
     s.on('notification', onNotification)
+    s.on('account:suspended', onSuspended)
     return () => {
       s.off('wallet', onWallet)
       s.off('notification', onNotification)
+      s.off('account:suspended', onSuspended)
     }
   }, [userId, qc])
 

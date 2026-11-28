@@ -12,6 +12,7 @@ import { grant, notify } from '../services/economy.ts'
 import { progress } from '../services/missions.ts'
 import { getRewards } from '../services/config.ts'
 import type { User, Weapon } from '../generated/prisma/client.ts'
+import { adminPlay } from '../auth.ts'
 
 export const weaponsRouter = Router()
 export const draftsRouter = Router()
@@ -37,23 +38,29 @@ async function checkDrawing(db: Tx | typeof prisma, user: User, strokes: unknown
   const v = validateStrokes(strokes)
   if (!v.ok) throw bad(v.error, 'BAD_DRAWING')
   const used = toolsUsed(v.strokes)
-  const owned = new Set((await db.userItem.findMany({ where: { userId: user.id }, select: { itemId: true } })).map((i) => i.itemId))
+  // Staff playing in admin mode may test every tool and paper.
+  const admin = adminPlay(user)
+  const owned = new Set((await db.userItem.findMany({ where: { userId: user.id, quantity: { gt: 0 } }, select: { itemId: true } })).map((i) => i.itemId))
   for (const t of used) {
-    if (!owned.has(TOOL_BY_ID[t].itemId)) throw bad(`'${TOOL_BY_ID[t].name}'은(는) 아직 가지고 있지 않은 도구예요.`, 'TOOL_NOT_OWNED')
+    if (!admin && !owned.has(TOOL_BY_ID[t].itemId)) throw bad(`'${TOOL_BY_ID[t].name}'은(는) 아직 가지고 있지 않은 도구예요.`, 'TOOL_NOT_OWNED')
   }
   const paper = await db.paper.findUnique({ where: { id: paperId } })
   if (!paper) throw bad('알 수 없는 종이예요.')
-  if (paper.unlockLevel > user.level) throw bad(`'${paper.name}'은(는) 레벨 ${paper.unlockLevel}에 열려요.`, 'PAPER_LOCKED')
+  if (!admin && paper.unlockLevel > user.level) throw bad(`'${paper.name}'은(는) 레벨 ${paper.unlockLevel}에 열려요.`, 'PAPER_LOCKED')
   return { strokes: v.strokes, used }
 }
 
 weaponsRouter.get('/owned', async (req, res) => {
-  const items = await prisma.userItem.findMany({ where: { userId: req.user!.id }, select: { itemId: true, equipped: true, quantity: true } })
+  const admin = adminPlay(req.user!)
+  const items = admin
+    ? (await prisma.item.findMany({ where: { category: 'TOOL', deletedAt: null } })).map((i) => ({ itemId: i.id, equipped: false, quantity: 1 }))
+    : await prisma.userItem.findMany({ where: { userId: req.user!.id, quantity: { gt: 0 } }, select: { itemId: true, equipped: true, quantity: true } })
   const papers = await prisma.paper.findMany({ orderBy: { sortOrder: 'asc' } })
   res.json({
     items,
-    papers: papers.map((p) => ({ id: p.id, name: p.name, unlockLevel: p.unlockLevel, unlocked: p.unlockLevel <= req.user!.level })),
-    level: req.user!.level,
+    papers: papers.map((p) => ({ id: p.id, name: p.name, unlockLevel: p.unlockLevel, unlocked: admin || p.unlockLevel <= req.user!.level })),
+    level: admin ? 99 : req.user!.level,
+    adminPlay: admin,
   })
 })
 

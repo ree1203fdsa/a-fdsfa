@@ -357,7 +357,7 @@ export default function WorkshopPage() {
             <h3 className="mb-1.5 text-xs font-bold text-dim">종이 <span className="font-normal">(레벨이 오르면 새 종이가 열려요)</span></h3>
             <div className="grid grid-cols-3 gap-1.5">
               {PAPERS.map((p) => {
-                const unlocked = p.unlockLevel <= user.level
+                const unlocked = user.adminPlay || p.unlockLevel <= user.level
                 return (
                   <button
                     key={p.id}

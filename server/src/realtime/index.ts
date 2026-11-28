@@ -4,6 +4,7 @@ import { prisma } from '../db.ts'
 import { setupLobby } from './lobby.ts'
 import { setupBattleSockets } from '../game/matches.ts'
 import { setupRooms } from './rooms.ts'
+import { setupModeration } from './moderation.ts'
 import { connected, disconnected, setStatus } from './presence.ts'
 
 export function setupRealtime(io: Server) {
@@ -27,6 +28,7 @@ export function setupRealtime(io: Server) {
     setupLobby(io, socket)
     setupBattleSockets(io, socket)
     setupRooms(io, socket)
+    setupModeration(io, socket)
     socket.on('presence:away', () => setStatus(userId, 'away'))
     socket.on('presence:active', () => setStatus(userId, 'online'))
     socket.on('disconnect', () => disconnected(userId))

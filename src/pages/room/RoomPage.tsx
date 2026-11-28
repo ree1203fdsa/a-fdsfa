@@ -8,6 +8,7 @@ import { api } from '@/lib/api'
 import { getSocket } from '@/lib/socket'
 import { useAuth } from '@/stores/auth'
 import { useRoom, type RoomMember } from '@/stores/room'
+import { PlayerMenu, StaffBadge } from '@/components/PlayerMenu'
 import { toast } from '@/stores/toast'
 
 export default function RoomPage() {
@@ -18,6 +19,7 @@ export default function RoomPage() {
   const [inviteOpen, setInviteOpen] = useState(false)
   const [starting, setStarting] = useState(false)
   const [menu, setMenu] = useState<RoomMember | null>(null)
+  const [player, setPlayer] = useState<RoomMember | null>(null)
 
   useEffect(() => {
     if (!room) nav('/play/friends', { replace: true })
@@ -72,11 +74,11 @@ export default function RoomPage() {
                   </div>
                   <div className="space-y-2">
                     {list.map((m) => (
-                      <button key={m.userId} onClick={() => host && m.userId !== me.id && setMenu(m)} className={cx('flex w-full items-center gap-3 rounded-xl bg-white/5 p-2 text-left', !m.connected && 'opacity-50')}>
+                      <button key={m.userId} onClick={() => m.userId !== me.id && (host ? setMenu(m) : setPlayer(m))} className={cx('flex w-full items-center gap-3 rounded-xl bg-white/5 p-2 text-left', !m.connected && 'opacity-50')}>
                         <span className="grid size-12 place-items-center rounded-full bg-gradient-to-b from-[#ffe0c2] to-[#f5b98a] text-2xl">😎</span>
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-1.5 truncate font-bold">
-                            {room.hostId === m.userId && '👑'} {m.nickname}{m.userId === me.id && ' (나)'}
+                            {room.hostId === m.userId && '👑'} {m.nickname}{m.userId === me.id && ' (나)'}<StaffBadge show={m.staff} />
                             <span className="font-num text-xs text-accent">Lv.{m.level}</span>
                           </span>
                           <span className="block truncate text-xs text-dim">{WEAPON_INFO[m.weaponType as WeaponType]?.emoji} {m.weapon}{!m.connected && ' · 연결 끊김'}</span>
@@ -145,6 +147,7 @@ export default function RoomPage() {
           <Button variant="danger" className="w-full" onClick={() => { s.emit('room:kick', { userId: menu!.userId }); setMenu(null) }}>내보내기</Button>
         </div>
       </Modal>
+      <PlayerMenu player={player} onClose={() => setPlayer(null)} />
       <InviteModal open={inviteOpen} onClose={() => setInviteOpen(false)} inRoom={room.members.map((m) => m.userId)} />
     </div>
   )
