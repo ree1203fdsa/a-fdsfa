@@ -262,3 +262,113 @@ export default function LobbyScene({ quality = 'medium' }: { quality?: 'low' | '
     </Canvas>
   )
 }
+
+// ───────────────────────── login screen scene ─────────────────────────
+
+/** Paint brush with a glowing tip, held handle-down (+Y is the tip). */
+function PaintBrush({ color = '#2e9bff' }: { color?: string }) {
+  return (
+    <group position={[0, -0.15, 0]}>
+      <mesh position={[0, 0.35, 0]} castShadow>
+        <cylinderGeometry args={[0.07, 0.09, 0.9, 10]} />
+        <meshStandardMaterial color="#7a4a22" roughness={0.6} />
+      </mesh>
+      <mesh position={[0, 0.86, 0]}>
+        <cylinderGeometry args={[0.1, 0.08, 0.16, 12]} />
+        <meshStandardMaterial color="#d8dde8" metalness={0.8} roughness={0.25} />
+      </mesh>
+      <mesh position={[0, 1.12, 0]}>
+        <coneGeometry args={[0.15, 0.42, 12]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.4} roughness={0.3} />
+      </mesh>
+      <pointLight position={[0, 1.2, 0.2]} color={color} intensity={6} distance={3} />
+    </group>
+  )
+}
+
+/** Oversized crayon. */
+function Crayon({ color = '#ff3048' }: { color?: string }) {
+  return (
+    <group position={[0, -0.1, 0]}>
+      <mesh position={[0, 0.5, 0]} castShadow>
+        <cylinderGeometry args={[0.16, 0.16, 1.1, 14]} />
+        <meshStandardMaterial color={color} roughness={0.45} />
+      </mesh>
+      {[0.2, 0.85].map((y) => (
+        <mesh key={y} position={[0, y, 0]}>
+          <cylinderGeometry args={[0.165, 0.165, 0.08, 14]} />
+          <meshStandardMaterial color="#5a0d16" roughness={0.6} />
+        </mesh>
+      ))}
+      <mesh position={[0, 1.2, 0]}>
+        <coneGeometry args={[0.16, 0.32, 14]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} roughness={0.35} />
+      </mesh>
+    </group>
+  )
+}
+
+function Splat({ x, z, r, color }: { x: number; z: number; r: number; color: string }) {
+  return (
+    <group position={[x, 0.015, z]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh><circleGeometry args={[r, 10]} /><meshStandardMaterial color={color} roughness={0.25} /></mesh>
+      {[0, 1, 2, 3, 4].map((i) => {
+        const a = i * 1.3 + r
+        return (
+          <mesh key={i} position={[Math.cos(a) * r * 1.35, Math.sin(a) * r * 1.35, 0]}>
+            <circleGeometry args={[r * 0.18, 8]} /><meshStandardMaterial color={color} roughness={0.25} />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+/** Blocky tree. */
+function Tree({ x, z, s = 1 }: { x: number; z: number; s?: number }) {
+  return (
+    <group position={[x, 0, z]} scale={s}>
+      <mesh position={[0, 0.8, 0]} castShadow><boxGeometry args={[0.5, 1.6, 0.5]} /><meshStandardMaterial color="#7a4a22" roughness={0.9} /></mesh>
+      <mesh position={[0, 2.2, 0]} castShadow><boxGeometry args={[2, 1.4, 2]} /><meshStandardMaterial color="#3fbf4a" roughness={0.8} /></mesh>
+      <mesh position={[0, 3.1, 0]} castShadow><boxGeometry args={[1.3, 0.8, 1.3]} /><meshStandardMaterial color="#5ad65f" roughness={0.8} /></mesh>
+    </group>
+  )
+}
+
+/** Login backdrop: the castle arena seen from the front, a blue and a red hero flanking the centre card. */
+export function LoginScene({ quality = 'medium' }: { quality?: 'low' | 'medium' | 'high' }) {
+  const dpr: [number, number] = quality === 'low' ? [0.7, 1] : [1, 1.5]
+  return (
+    <Canvas shadows={quality !== 'low'} dpr={dpr} camera={{ position: [0, 2.1, 7], fov: 50 }} gl={{ antialias: quality !== 'low' }} onCreated={({ camera }) => camera.lookAt(0, 2.9, -4)}>
+      <fog attach="fog" args={['#a9c6ff', 34, 90]} />
+      <Sky />
+      <Clouds />
+      <hemisphereLight args={['#eef4ff', '#6a60b0', 2.4]} />
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[4, 12, 12]} intensity={2.8} color="#fff6e2" castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-10} shadow-camera-right={10} shadow-camera-top={10} shadow-camera-bottom={-10} />
+      <pointLight position={[-5, 3, 3]} intensity={30} color="#2e9bff" distance={10} />
+      <pointLight position={[5, 3, 3]} intensity={30} color="#ff3048" distance={10} />
+      <group rotation={[0, Math.PI, 0]}><Castle /></group>
+      <Floor />
+      {[[-13, -12, 1.4], [-9, -15, 1.1], [13, -12, 1.4], [9, -15, 1.1], [-17, -6, 1.6], [17, -6, 1.6], [-5, -18, 1], [5, -18, 1]].map(([x, z, sc]) => <Tree key={`${x},${z}`} x={x} z={z} s={sc} />)}
+      <Splat x={-3.2} z={1.6} r={1.7} color="#1e90ff" />
+      <Splat x={-5.5} z={-1} r={1.1} color="#1e90ff" />
+      <Splat x={3.2} z={1.6} r={1.7} color="#ff3048" />
+      <Splat x={5.5} z={-1} r={1.1} color="#ff3048" />
+      <Splat x={0.4} z={3.2} r={0.8} color="#ffd23f" />
+      <Splat x={-1.8} z={-3} r={1} color="#ffd23f" />
+      <Splat x={2.2} z={-4} r={1} color="#3ccf4e" />
+      <Character
+        position={[-3.1, 0.2, 1.7]} rotation={[0, 0.55, 0]} chestEmblem="#4fb8ff" armRaise={1.25}
+        look={{ hair: '#6b3a1a', shirt: '#1a1c28', cape: null }}
+        rightHand={<PaintBrush />}
+      />
+      <Character
+        position={[3.1, 0.2, 1.7]} rotation={[0, -0.55, 0]} chestEmblem="#ffc21a" armRaise={1.25}
+        look={{ hair: '#e8ecff', shirt: '#2a1418', pants: '#1a0c10', cape: null }}
+        rightHand={<Crayon />}
+      />
+      {quality !== 'low' && <Sparkles count={50} scale={[14, 6, 8]} position={[0, 3, 0]} size={3} speed={0.3} color="#ffe28a" opacity={0.7} />}
+    </Canvas>
+  )
+}

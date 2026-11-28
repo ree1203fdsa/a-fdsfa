@@ -69,8 +69,8 @@ export interface Pose {
 }
 
 export function Character({
-  look, rightHand, idle = true, poseRef, ...props
-}: { look?: CharacterLook; rightHand?: ReactNode; idle?: boolean; poseRef?: { current: Pose } } & ThreeElements['group']) {
+  look, rightHand, idle = true, poseRef, chestEmblem, armRaise = 0.55, ...props
+}: { look?: CharacterLook; rightHand?: ReactNode; idle?: boolean; poseRef?: { current: Pose }; chestEmblem?: string; armRaise?: number } & ThreeElements['group']) {
   const c = { ...DEFAULT, ...look }
   const root = useRef<Group>(null)
   const body = useRef<Group>(null)
@@ -81,6 +81,7 @@ export function Character({
   const legR = useRef<Group>(null)
   const cape = useRef<Group>(null)
   const emblem = useMemo(() => crownTexture('#e8e8f0'), [])
+  const chest = useMemo(() => (chestEmblem ? crownTexture(chestEmblem) : null), [chestEmblem])
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime
@@ -90,7 +91,7 @@ export function Character({
       if (body.current) body.current.position.y = Math.sin(t * 1.8) * 0.015
       if (head.current) head.current.rotation.y = Math.sin(t * 0.45) * 0.15
       if (armL.current) armL.current.rotation.x = Math.sin(t * 1.8) * 0.04
-      if (armR.current) armR.current.rotation.x = -0.55 + Math.sin(t * 1.8 + 0.6) * 0.04
+      if (armR.current) armR.current.rotation.x = -armRaise + Math.sin(t * 1.8 + 0.6) * 0.04
       if (cape.current) cape.current.rotation.x = 0.12 + Math.sin(t * 2.2) * 0.04
       return
     }
@@ -149,6 +150,13 @@ export function Character({
           <boxGeometry args={[0.74, 0.08, 0.4]} />
           <meshStandardMaterial color="#2b2b36" roughness={0.4} metalness={0.3} />
         </mesh>
+
+        {chest && (
+          <mesh position={[0, 1.3, 0.195]}>
+            <planeGeometry args={[0.36, 0.36]} />
+            <meshStandardMaterial map={chest} transparent roughness={0.5} emissive={chestEmblem} emissiveIntensity={0.25} />
+          </mesh>
+        )}
 
         {/* cape with crown emblem */}
         {c.cape && (

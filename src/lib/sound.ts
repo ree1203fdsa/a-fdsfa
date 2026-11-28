@@ -1,4 +1,5 @@
 import { useAuth } from '@/stores/auth'
+import { guestPrefs } from './guestPrefs'
 
 let ctx: AudioContext | null = null
 
@@ -13,7 +14,9 @@ function audio() {
 }
 
 function volume() {
-  const v = useAuth.getState().user?.settings?.sfx ?? 80
+  const user = useAuth.getState().user
+  if (!user) return guestPrefs().sound ? 0.8 : 0
+  const v = user.settings?.sfx ?? 80
   return Math.max(0, Math.min(100, v)) / 100
 }
 
