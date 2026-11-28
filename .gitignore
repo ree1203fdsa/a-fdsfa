@@ -27,3 +27,7 @@ dist-ssr
 *.sw?
 
 *.tsbuildinfo
+
+# android app build output
+apk/
+android/local.properties
