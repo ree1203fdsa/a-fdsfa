@@ -67,7 +67,7 @@ function GuestSettings() {
       {open && (
         <div className="absolute right-0 top-14 z-30 w-60 rounded-2xl border border-white/10 bg-[#141a3a]/95 p-4 text-sm text-white shadow-2xl backdrop-blur">
           <label className="flex items-center justify-between py-1.5">
-            효과음
+            소리(효과음·음악)
             <input type="checkbox" className="size-5" checked={prefs.sound} onChange={(e) => setPrefs({ ...prefs, sound: e.target.checked })} />
           </label>
           <label className="flex items-center justify-between py-1.5">

@@ -1,9 +1,10 @@
 import { useAuth } from '@/stores/auth'
 import { guestPrefs } from './guestPrefs'
+import { playMusic, setMusicVolume, stopMusic, type TrackName } from './music'
 
 let ctx: AudioContext | null = null
 
-function audio() {
+export function audio() {
   if (!ctx) {
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     if (!AC) return null
@@ -38,46 +39,27 @@ function tone(freq: number, dur: number, type: OscillatorType = 'sine', delay = 
   o.stop(t + dur + 0.02)
 }
 
-// ── background music: a soft looping pentatonic tune generated on the fly ──
-const MELODY = [0, 4, 7, 9, 12, 9, 7, 4, 2, 5, 9, 12, 14, 12, 9, 5]
-const ROOTS = [261.63, 220, 174.61, 196]
-let bgmTimer: ReturnType<typeof setInterval> | null = null
-let bgmStep = 0
-
+// ── background music lives in music.ts; these wrappers keep the volume tied to settings ──
 function bgmVolume() {
-  const v = useAuth.getState().user?.settings?.bgm ?? 60
+  const user = useAuth.getState().user
+  if (!user) return guestPrefs().sound ? 0.5 : 0
+  const v = user.settings?.bgm ?? 60
   return Math.max(0, Math.min(100, v)) / 100
 }
 
-export function startBgm() {
-  if (bgmTimer || bgmVolume() <= 0) return
-  bgmTimer = setInterval(() => {
-    const vol = bgmVolume()
-    if (vol <= 0) return stopBgm()
-    const root = ROOTS[Math.floor(bgmStep / 16) % ROOTS.length]
-    const note = root * Math.pow(2, MELODY[bgmStep % 16] / 12)
-    const a = audio()
-    if (a) {
-      const t = a.currentTime
-      const o = a.createOscillator()
-      const g = a.createGain()
-      o.type = 'triangle'
-      o.frequency.value = note
-      g.gain.setValueAtTime(0.0001, t)
-      g.gain.exponentialRampToValueAtTime(0.035 * vol, t + 0.02)
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45)
-      o.connect(g).connect(a.destination)
-      o.start(t)
-      o.stop(t + 0.5)
-    }
-    bgmStep++
-  }, 260)
+/** Starts or switches the background song (call after a user gesture). */
+export function startBgm(track: TrackName = 'lobby') {
+  const vol = bgmVolume()
+  if (vol <= 0) return stopMusic()
+  const a = audio()
+  if (a) playMusic(a, track, vol)
 }
 
 export function stopBgm() {
-  if (bgmTimer) clearInterval(bgmTimer)
-  bgmTimer = null
+  stopMusic()
 }
+
+export { setMusicVolume }
 
 export const sfx = {
   click: () => tone(660, 0.07, 'triangle', 0, 0.12),
