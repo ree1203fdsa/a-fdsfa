@@ -5,6 +5,7 @@ import { TutorialModal } from '@/components/Tutorial'
 import { PlayerMenu, StaffBadge } from '@/components/PlayerMenu'
 import { Button, cx, IconButton, Logo, Modal, Progress } from '@/components/ui'
 import { AdminButton } from '@/components/AdminButton'
+import { SplashLogo } from '@/components/SplashLogo'
 import { api, errorMessage } from '@/lib/api'
 import { useCountdown } from '@/lib/hooks'
 import { getSocket } from '@/lib/socket'
@@ -102,15 +103,7 @@ export default function MainPage() {
 
         {/* ── logo + tagline ── */}
         <div className="pointer-events-none relative flex flex-col items-center">
-          {/* paint splash behind the logo, like the reference art */}
-          <svg viewBox="0 0 400 200" className="absolute -top-4 w-[22rem] opacity-90 sm:w-[30rem]" aria-hidden>
-            <path d="M60 120 C30 80 70 40 120 60 C130 20 190 10 200 50 C230 10 300 20 290 70 C350 60 370 120 320 140 C340 180 270 190 250 160 C220 200 150 195 140 160 C90 190 40 165 60 120Z" fill="#ffd23f" />
-            <circle cx="40" cy="70" r="14" fill="#ff3b4e" /><circle cx="360" cy="60" r="12" fill="#2e9bff" />
-            <circle cx="70" cy="175" r="9" fill="#2e9bff" /><circle cx="345" cy="170" r="10" fill="#ff3b4e" />
-            <path d="M40 110 C20 90 50 70 75 85 L90 130 C70 150 45 140 40 110Z" fill="#ff3b4e" />
-            <path d="M360 110 C385 95 380 140 345 140 L320 100 C335 85 350 95 360 110Z" fill="#2e9bff" />
-          </svg>
-          <div className="relative scale-110 sm:scale-125"><Logo size="md" /></div>
+          <SplashLogo size="md" />
           <p className="relative mt-1 -rotate-2 rounded-lg bg-gradient-to-r from-red via-[#8a4dff] to-blue px-5 py-1 font-display text-sm tracking-wide text-white shadow-lg sm:mt-3 sm:text-base">
             그림을 그리고, <span className="text-accent">무기로 변환하여 전투</span>하세요!
           </p>
