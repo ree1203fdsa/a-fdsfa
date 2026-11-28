@@ -46,7 +46,8 @@ export function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-        <div className="mt-3 rounded-xl bg-white/5 p-3 text-sm">
+        <Button size="sm" variant="blue" className="mt-3 w-full" onClick={() => nav('/')}>🎮 게임으로 돌아가기</Button>
+        <div className="mt-2 rounded-xl bg-white/5 p-3 text-sm">
           <p className="font-bold">{admin.nickname}</p>
           <p className="text-xs text-accent">{ROLE_NAMES[admin.role]}</p>
           <Button size="sm" variant="secondary" className="mt-2 w-full" onClick={async () => {
@@ -71,7 +72,7 @@ export function AdminLogin() {
   const nav = useNavigate()
   const qc = useQueryClient()
   const me = useAdmin()
-  const [f, setF] = useState({ username: '', password: '' })
+  const [f, setF] = useState({ username: new URLSearchParams(window.location.search).get('u') ?? '', password: '' })
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   if (me.data?.admin) return <Navigate to="/admin" replace />
@@ -97,7 +98,8 @@ export function AdminLogin() {
         <PasswordField label="비밀번호" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} autoComplete="current-password" />
         {error && <p className="rounded-xl bg-bad/20 px-3 py-2 text-sm text-bad">{error}</p>}
         <Button type="submit" size="lg" className="w-full" loading={busy}>로그인</Button>
-        <p className="text-center text-xs text-dim">운영진 계정만 들어올 수 있어요. 관리자 세션은 8시간 뒤 자동으로 끝나요.</p>
+        <p className="text-center text-xs text-dim">운영진 계정만 들어올 수 있어요. 보안을 위해 게임 로그인과 따로 비밀번호를 한 번 더 확인하고, 8시간 뒤 자동으로 끝나요.</p>
+        <Button type="button" variant="ghost" className="w-full" onClick={() => nav('/')}>🎮 게임으로 돌아가기</Button>
       </form>
     </div>
   )

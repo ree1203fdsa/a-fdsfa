@@ -35,6 +35,7 @@ export default function MainPage() {
   const home = useQuery({ queryKey: ['home'], queryFn: () => api.get<HomeData>('/home') })
   const [menuOpen, setMenuOpen] = useState(false)
   const [howTo, setHowTo] = useState(false)
+  const [adminMenu, setAdminMenu] = useState(false)
   const [notice, setNotice] = useState<HomeData['notices'][number] | null>(null)
   const [params, setParams] = useSearchParams()
   const [tutorial, setTutorial] = useState(() => params.get('tutorial') === '1' || (!user.tutorialDone && !user.settings.tutorialSlidesSeen))
@@ -80,6 +81,15 @@ export default function MainPage() {
           </button>
           <IconButton label="설정" className="!size-12 text-2xl" onClick={() => nav('/settings')}>⚙️</IconButton>
           <IconButton label="친구" className="hidden !size-12 text-2xl sm:grid" onClick={() => nav('/friends')}>👥</IconButton>
+          {user.isStaff && (
+            <button
+              onClick={() => setAdminMenu(true)}
+              className="gloss flex h-12 items-center gap-1.5 rounded-2xl bg-gradient-to-b from-[#ff6b7c] to-red px-3 font-display text-white"
+              aria-label="관리자 메뉴"
+            >
+              🛡️ <span className="hidden sm:inline">관리자</span>
+            </button>
+          )}
         </header>
 
         {/* ── logo + tagline ── */}
@@ -122,6 +132,21 @@ export default function MainPage() {
       <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       <HowToModal open={howTo} onClose={() => setHowTo(false)} />
       <TutorialModal open={tutorial} onClose={closeTutorial} rewardPending={!user.tutorialDone} />
+      <Modal open={adminMenu} onClose={() => setAdminMenu(false)} title="🛡️ 관리자 메뉴">
+        <p className="mb-4 text-sm text-dim">어떻게 할까요?</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button onClick={() => setAdminMenu(false)} className="gloss flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-b from-[#5cb6ff] to-blue p-5 text-white">
+            <span className="text-4xl">🎮</span>
+            <span className="font-display text-xl">일반 플레이로 플레이</span>
+            <span className="text-xs text-white/85">일반 플레이어처럼 게임을 계속해요</span>
+          </button>
+          <button onClick={() => nav(`/admin/login?u=${encodeURIComponent(user.username)}`)} className="gloss flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-b from-[#ff6b7c] to-red p-5 text-white">
+            <span className="text-4xl">🛠️</span>
+            <span className="font-display text-xl">관리자로 전환</span>
+            <span className="text-xs text-white/85">관리자 센터로 이동해요</span>
+          </button>
+        </div>
+      </Modal>
       <Modal open={notice !== null} onClose={() => setNotice(null)} title={notice?.title}>
         <p className="mb-6 whitespace-pre-wrap text-dim">{notice?.body}</p>
         <Button className="w-full" onClick={() => setNotice(null)}>닫기</Button>
